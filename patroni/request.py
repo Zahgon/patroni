@@ -53,7 +53,7 @@ class PatroniRequest(object):
 
         :returns: value of ``ctl.*name*`` if present, ``None`` otherwise.
         """
-        return config.get('ctl', {}).get(name, default)
+        pass
 
     @staticmethod
     def _get_restapi_value(config: Union[Config, Dict[str, Any]], name: str) -> Optional[Any]:
@@ -64,7 +64,7 @@ class PatroniRequest(object):
 
         :returns: value of ``restapi -> *name*`` if present, ``None`` otherwise.
         """
-        return config.get('restapi', {}).get(name)
+        pass
 
     def _apply_pool_param(self, param: str, value: Any) -> None:
         """Configure *param* as *value* in the request manager.
@@ -73,10 +73,7 @@ class PatroniRequest(object):
         :param value: new value for *param*. If ``None``, ``0``, ``False``, and similar values, then explicit *param*
             declaration is removed, in which case it takes its default value, if any.
         """
-        if value:
-            self._pool.connection_pool_kw[param] = value
-        else:
-            self._pool.connection_pool_kw.pop(param, None)
+        pass
 
     def _apply_ssl_file_param(self, config: Union[Config, Dict[str, Any]], name: str) -> Union[str, None]:
         """Apply a given SSL related param to the request manager.
@@ -91,9 +88,7 @@ class PatroniRequest(object):
 
         :returns: value of ``ctl.*name*file`` if present, ``None`` otherwise.
         """
-        value = self._get_ctl_value(config, name + 'file')
-        self._apply_pool_param(name + '_file', value)
-        return value
+        pass
 
     def reload_config(self, config: Union[Config, Dict[str, Any]]) -> None:
         """Apply *config* to request manager.
@@ -110,30 +105,7 @@ class PatroniRequest(object):
 
         :param config: Patroni YAML configuration.
         """
-        # ``ctl -> auth`` is equivalent to ``ctl -> authentication -> username`` + ``:`` +
-        # ``ctl -> authentication -> password``. And the same for ``restapi -> auth``
-        basic_auth = self._get_ctl_value(config, 'auth') or self._get_restapi_value(config, 'auth')
-        self._pool.headers = urllib3.make_headers(basic_auth=basic_auth, user_agent=USER_AGENT)
-        self._pool.connection_pool_kw['cert_reqs'] = 'CERT_REQUIRED'
-
-        insecure = self._insecure if isinstance(self._insecure, bool)\
-            else self._get_ctl_value(config, 'insecure', False)
-
-        if self._apply_ssl_file_param(config, 'cert'):
-            if insecure:  # The assert_hostname = False helps to silence warnings
-                self._pool.connection_pool_kw['assert_hostname'] = False
-
-            self._apply_ssl_file_param(config, 'key')
-            password = self._get_ctl_value(config, 'keyfile_password')
-            self._apply_pool_param('key_password', password)
-        else:
-            if insecure:  # Disable server certificate validation if requested
-                self._pool.connection_pool_kw['cert_reqs'] = 'CERT_NONE'
-            self._pool.connection_pool_kw.pop('assert_hostname', None)
-            self._pool.connection_pool_kw.pop('key_file', None)
-
-        cacert = self._get_ctl_value(config, 'cacert') or self._get_restapi_value(config, 'cafile')
-        self._apply_pool_param('ca_certs', cacert)
+        pass
 
     def request(self, method: str, url: str, body: Optional[Any] = None,
                 **kwargs: Any) -> urllib3.response.HTTPResponse:
@@ -146,9 +118,7 @@ class PatroniRequest(object):
 
         :returns: the response returned upon request.
         """
-        if body is not None and not isinstance(body, str):
-            body = json.dumps(body)
-        return self._pool.request(method.upper(), url, body=body, **kwargs)
+        pass
 
     def __call__(self, member: Member, method: str = 'GET', endpoint: Optional[str] = None,
                  data: Optional[Any] = None, **kwargs: Any) -> urllib3.response.HTTPResponse:

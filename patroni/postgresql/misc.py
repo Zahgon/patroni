@@ -80,31 +80,18 @@ def postgres_version_to_int(pg_version: str) -> int:
     100001
     >>> postgres_version_to_int('10')  # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
-        ...
+        pass
     PostgresException: 'Invalid PostgreSQL version format: X.Y or X.Y.Z is accepted: 10'
     >>> postgres_version_to_int('9.6')  # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
-        ...
+        pass
     PostgresException: 'Invalid PostgreSQL version format: X.Y or X.Y.Z is accepted: 9.6'
     >>> postgres_version_to_int('a.b.c')  # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
-        ...
+        pass
     PostgresException: 'Invalid PostgreSQL version: a.b.c'
     """
-
-    try:
-        components = list(map(int, pg_version.split('.')))
-    except ValueError:
-        raise PostgresException('Invalid PostgreSQL version: {0}'.format(pg_version))
-
-    if len(components) < 2 or len(components) == 2 and components[0] < 10 or len(components) > 3:
-        raise PostgresException('Invalid PostgreSQL version format: X.Y or X.Y.Z is accepted: {0}'.format(pg_version))
-
-    if len(components) == 2:
-        # new style version numbers, i.e. 10.1 becomes 100001
-        components.insert(1, 0)
-
-    return int(''.join('{0:02d}'.format(c) for c in components))
+    pass
 
 
 def postgres_major_version_to_int(pg_version: str) -> int:
@@ -114,7 +101,7 @@ def postgres_major_version_to_int(pg_version: str) -> int:
     >>> postgres_major_version_to_int('9.6')
     90600
     """
-    return postgres_version_to_int(pg_version + '.0')
+    pass
 
 
 def get_major_from_minor_version(version: int) -> int:
@@ -132,37 +119,20 @@ def get_major_from_minor_version(version: int) -> int:
         >>> get_major_from_minor_version(90313)
         90300
     """
-    return version // 100 * 100
+    pass
 
 
 def parse_lsn(lsn: str) -> int:
-    t = lsn.split('/')
-    return int(t[0], 16) * 0x100000000 + int(t[1], 16)
+    pass
 
 
 def parse_history(data: str) -> Iterable[Tuple[int, int, str]]:
-    for line in data.split('\n'):
-        values = line.strip().split('\t')
-        if len(values) == 3:
-            try:
-                yield int(values[0]), parse_lsn(values[1]), values[2]
-            except (IndexError, ValueError):
-                logger.exception('Exception when parsing timeline history line "%s"', values)
+    pass
 
 
 def format_lsn(lsn: int, full: bool = False) -> str:
-    template = '{0:X}/{1:08X}' if full else '{0:X}/{1:X}'
-    return template.format(lsn >> 32, lsn & 0xFFFFFFFF)
+    pass
 
 
 def fsync_dir(path: str) -> None:
-    if os.name != 'nt':
-        fd = os.open(path, os.O_DIRECTORY)
-        try:
-            os.fsync(fd)
-        except OSError as e:
-            # Some filesystems don't like fsyncing directories and raise EINVAL. Ignoring it is usually safe.
-            if e.errno != errno.EINVAL:
-                raise
-        finally:
-            os.close(fd)
+    pass

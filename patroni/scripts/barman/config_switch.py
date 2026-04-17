@@ -55,11 +55,7 @@ def _should_skip_switch(args: Namespace) -> bool:
 
     :returns: if the operation should be skipped.
     """
-    if args.switch_when == "promoted":
-        return args.role not in {"primary", "promoted"}
-    if args.switch_when == "demoted":
-        return args.role not in {"replica", "demoted"}
-    return False
+    pass
 
 
 def _switch_config(api: "PgBackupApi", barman_server: str,
@@ -82,44 +78,7 @@ def _switch_config(api: "PgBackupApi", barman_server: str,
     :returns: the return code to be used when exiting the ``patroni_barman``
         application. Refer to :class:`ExitCode`.
     """
-    operation_id = None
-
-    try:
-        operation_id = api.create_config_switch_operation(
-            barman_server,
-            barman_model,
-            reset,
-        )
-    except RetriesExceeded as exc:
-        logging.error("An issue was faced while trying to create a config "
-                      "switch operation: %r", exc)
-        return ExitCode.HTTP_ERROR
-
-    logging.info("Created the config switch operation with ID %s",
-                 operation_id)
-
-    status = None
-
-    while True:
-        try:
-            status = api.get_operation_status(barman_server, operation_id)
-        except RetriesExceeded:
-            logging.error("Maximum number of retries exceeded, exiting.")
-            return ExitCode.HTTP_ERROR
-
-        if status != OperationStatus.IN_PROGRESS:
-            break
-
-        logging.info("Config switch operation %s is still in progress",
-                     operation_id)
-        time.sleep(5)
-
-    if status == OperationStatus.DONE:
-        logging.info("Config switch operation finished successfully.")
-        return ExitCode.CONFIG_SWITCH_DONE
-    else:
-        logging.error("Config switch operation failed.")
-        return ExitCode.CONFIG_SWITCH_FAILED
+    pass
 
 
 def run_barman_config_switch(api: "PgBackupApi", args: Namespace) -> int:
@@ -133,14 +92,4 @@ def run_barman_config_switch(api: "PgBackupApi", args: Namespace) -> int:
     :returns: the return code to be used when exiting the ``patroni_barman``
         application. Refer to :class:`ExitCode`.
     """
-    if _should_skip_switch(args):
-        logging.info("Config switch operation was skipped (role=%s, "
-                     "switch_when=%s).", args.role, args.switch_when)
-        return ExitCode.CONFIG_SWITCH_SKIPPED
-
-    if not bool(args.barman_model) ^ bool(args.reset):
-        logging.error("One, and only one among 'barman_model' ('%s') and "
-                      "'reset' ('%s') should be given", args.barman_model, args.reset)
-        return ExitCode.INVALID_ARGS
-
-    return _switch_config(api, args.barman_server, args.barman_model, args.reset)
+    pass

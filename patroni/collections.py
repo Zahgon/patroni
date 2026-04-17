@@ -87,7 +87,7 @@ class CaseInsensitiveSet(MutableSet[str]):
 
         :param value: value to be added to the set.
         """
-        self._values[value.lower()] = value
+        pass
 
     def discard(self, value: str) -> None:
         """Remove *value* from this set.
@@ -96,7 +96,7 @@ class CaseInsensitiveSet(MutableSet[str]):
 
         :param value: value to be removed from the set.
         """
-        self._values.pop(value.lower(), None)
+        pass
 
     def issubset(self, other: 'CaseInsensitiveSet') -> bool:
         """Check if this set is a subset of *other*.
@@ -104,7 +104,7 @@ class CaseInsensitiveSet(MutableSet[str]):
         :param other: another set to be compared with this set.
         :returns: ``True`` if this set is a subset of *other*, else ``False``.
         """
-        return self <= other
+        pass
 
 
 class CaseInsensitiveDict(MutableMapping[str, Any]):
@@ -186,7 +186,7 @@ class CaseInsensitiveDict(MutableMapping[str, Any]):
 
         :return: a new dict object with the same keys and values of this dict.
         """
-        return CaseInsensitiveDict({v[0]: v[1] for v in self._values.values()})
+        pass
 
     def keys(self) -> KeysView[str]:
         """Return a new view of the dict's keys.
@@ -248,7 +248,7 @@ class _FrozenDict(Mapping[str, Any]):
 
         :return: a new dict object with the same keys and values of this dict.
         """
-        return deepcopy(self.__values)
+        pass
 
 
 EMPTY_DICT = _FrozenDict()

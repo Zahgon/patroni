@@ -17,13 +17,10 @@ class RaftController(AbstractPatroniDaemon):
         self._raft = KVStoreTTL(None, None, None, **kvstore_config)
 
     def _run_cycle(self) -> None:
-        try:
-            self._raft.doTick(self._raft.conf.autoTickPeriod)
-        except Exception:
-            logger.exception('doTick')
+        pass
 
     def _shutdown(self) -> None:
-        self._raft.destroy()
+        pass
 
 
 def main() -> None:

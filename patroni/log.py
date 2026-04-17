@@ -42,16 +42,14 @@ class PatroniFileHandler(RotatingFileHandler):
         .. note::
             If *mode* is not specified, we calculate it from the `umask` value.
         """
-        self._log_file_mode = 0o666 & ~pg_perm.orig_umask if mode is None else mode
+        pass
 
     def _open(self) -> TextIOWrapper:
         """Open a new log file and assign permissions.
 
         :returns: the resulting stream.
         """
-        ret = super(PatroniFileHandler, self)._open()
-        os.chmod(self.baseFilename, self._log_file_mode)
-        return ret
+        pass
 
 
 def debug_exception(self: logging.Logger, msg: object, *args: Any, **kwargs: Any) -> None:
@@ -69,12 +67,7 @@ def debug_exception(self: logging.Logger, msg: object, *args: Any, **kwargs: Any
     :param args: positional arguments to be passed to :func:`~self.debug` or :func:`~self.error`.
     :param kwargs: keyword arguments to be passed to :func:`~self.debug` or :func:`~self.error`.
     """
-    kwargs.pop("exc_info", False)
-    if self.isEnabledFor(logging.DEBUG):
-        self.debug(msg, *args, exc_info=True, **kwargs)
-    else:
-        msg = "{0}, DETAIL: '{1}'".format(msg, sys.exc_info()[1])
-        self.error(msg, *args, exc_info=False, **kwargs)
+    pass
 
 
 def error_exception(self: logging.Logger, msg: object, *args: Any, **kwargs: Any) -> None:
@@ -91,8 +84,7 @@ def error_exception(self: logging.Logger, msg: object, *args: Any, **kwargs: Any
     :param args: positional arguments to be passed to :func:`~self.error`.
     :param kwargs: keyword arguments to be passed to :func:`~self.error`.
     """
-    exc_info = kwargs.pop("exc_info", True)
-    self.error(msg, *args, exc_info=exc_info, **kwargs)
+    pass
 
 
 def _type(value: Any) -> str:
@@ -101,7 +93,7 @@ def _type(value: Any) -> str:
     :param value: any arbitrary value.
     :returns: a string with a type name.
     """
-    return value.__class__.__name__
+    pass
 
 
 class QueueHandler(logging.Handler):
@@ -121,11 +113,7 @@ class QueueHandler(logging.Handler):
 
         :param record: the record to be logged.
         """
-        self.format(record)
-        record.msg = record.message
-        record.args = None
-        record.exc_info = None
-        self.queue.put_nowait(record)
+        pass
 
     def _try_to_report_lost_records(self) -> None:
         """Report the number of log messages that have been lost and reset the counter.
@@ -133,15 +121,7 @@ class QueueHandler(logging.Handler):
         .. note::
             It will issue an ``WARNING`` message in the logs with the number of lost log messages.
         """
-        if self._records_lost:
-            try:
-                record = _LOGGER.makeRecord(_LOGGER.name, logging.WARNING, __file__, 0,
-                                            'QueueHandler has lost %s log records',
-                                            (self._records_lost,), None, 'emit')
-                self._put_record(record)
-                self._records_lost = 0
-            except Exception:
-                pass
+        pass
 
     def emit(self, record: logging.LogRecord) -> None:
         """Handle each log record that is emitted.
@@ -152,16 +132,12 @@ class QueueHandler(logging.Handler):
 
         :param record: the record that was emitted.
         """
-        try:
-            self._put_record(record)
-            self._try_to_report_lost_records()
-        except Exception:
-            self._records_lost += 1
+        pass
 
     @property
     def records_lost(self) -> int:
         """Number of log messages that have been lost while the queue was full."""
-        return self._records_lost
+        pass
 
 
 class ProxyHandler(logging.Handler):
@@ -189,8 +165,7 @@ class ProxyHandler(logging.Handler):
 
         :param record: the record that was emitted.
         """
-        if self.patroni_logger.log_handler is not None:
-            self.patroni_logger.log_handler.handle(record)
+        pass
 
 
 class PatroniLogger(Thread):
@@ -268,21 +243,7 @@ class PatroniLogger(Thread):
 
                 update_loggers({'urllib3.connectionpool': 'WARNING'})
         """
-        loggers = deepcopy(config)
-        for name, logger in self._root_logger.manager.loggerDict.items():
-            # ``Placeholder`` is a node in the log manager for which no logger has been defined. We are interested only
-            # in the ones that were defined
-            if not isinstance(logger, logging.PlaceHolder):
-                # if this logger is present in *config*, use the configured level, otherwise
-                # use ``logging.NOTSET``, which means it will inherit the level
-                # from any parent node up to the root for which log level is defined.
-                level = loggers.pop(name, logging.NOTSET)
-                logger.setLevel(level)
-
-        # define loggers that do not exist yet and set level as configured in the *config*
-        for name, level in loggers.items():
-            logger = self._root_logger.manager.getLogger(name)
-            logger.setLevel(level)
+        pass
 
     def _is_config_changed(self, config: Dict[str, Any]) -> bool:
         """Checks if the given config is different from the current one.
@@ -291,35 +252,7 @@ class PatroniLogger(Thread):
 
         :returns: ``True`` if the config is changed, ``False`` otherwise.
         """
-        old_config = self._config or {}
-
-        oldlogtype = old_config.get('type', PatroniLogger.DEFAULT_TYPE)
-        logtype = config.get('type', PatroniLogger.DEFAULT_TYPE)
-
-        oldlogformat: type_logformat = old_config.get('format', PatroniLogger.DEFAULT_FORMAT)
-        logformat: type_logformat = config.get('format', PatroniLogger.DEFAULT_FORMAT)
-
-        olddateformat = old_config.get('dateformat') or None
-        dateformat = config.get('dateformat') or None  # Convert empty string to `None`
-
-        old_static_fields = old_config.get('static_fields', {})
-        static_fields = config.get('static_fields', {})
-
-        old_log_config = {
-            'type': oldlogtype,
-            'format': oldlogformat,
-            'dateformat': olddateformat,
-            'static_fields': old_static_fields
-        }
-
-        log_config = {
-            'type': logtype,
-            'format': logformat,
-            'dateformat': dateformat,
-            'static_fields': static_fields
-        }
-
-        return not deep_compare(old_log_config, log_config)
+        pass
 
     def _get_plain_formatter(self, logformat: type_logformat, dateformat: Optional[str]) -> logging.Formatter:
         """Returns a logging formatter with the specified format and date format.
@@ -332,12 +265,7 @@ class PatroniLogger(Thread):
 
         :returns: A logging formatter object that can be used to format log records.
         """
-
-        if not isinstance(logformat, str):
-            _LOGGER.warning('Expected log format to be a string when log type is plain, but got "%s"', _type(logformat))
-            logformat = PatroniLogger.DEFAULT_FORMAT
-
-        return logging.Formatter(logformat, dateformat)
+        pass
 
     def _get_json_formatter(self, logformat: type_logformat, dateformat: Optional[str],
                             static_fields: Dict[str, Any]) -> logging.Formatter:
@@ -353,67 +281,7 @@ class PatroniLogger(Thread):
 
         :returns: A logging formatter object that can be used to format log records as JSON strings.
         """
-
-        if isinstance(logformat, str):
-            jsonformat = logformat
-            rename_fields = {}
-        elif isinstance(logformat, list):
-            logformat = cast(List[Any], logformat)
-            log_fields: List[str] = []
-            rename_fields: Dict[str, str] = {}
-
-            for field in logformat:
-                if isinstance(field, str):
-                    log_fields.append(field)
-                elif isinstance(field, dict):
-                    field = cast(Dict[str, Any], field)
-                    for original_field, renamed_field in field.items():
-                        if isinstance(renamed_field, str):
-                            log_fields.append(original_field)
-                            rename_fields[original_field] = renamed_field
-                        else:
-                            _LOGGER.warning(
-                                'Expected renamed log field to be a string, but got "%s"',
-                                _type(renamed_field)
-                            )
-
-                else:
-                    _LOGGER.warning(
-                        'Expected each item of log format to be a string or dictionary, but got "%s"',
-                        _type(field)
-                    )
-
-            if len(log_fields) > 0:
-                jsonformat = ' '.join([f'%({field})s' for field in log_fields])
-            else:
-                jsonformat = PatroniLogger.DEFAULT_FORMAT
-        else:
-            jsonformat = PatroniLogger.DEFAULT_FORMAT
-            rename_fields = {}
-            _LOGGER.warning('Expected log format to be a string or a list, but got "%s"', _type(logformat))
-
-        try:
-            try:
-                from pythonjsonlogger import json as jsonlogger  # pyright: ignore
-            except ImportError:  # pragma: no cover
-                from pythonjsonlogger import jsonlogger
-                if hasattr(jsonlogger, 'RESERVED_ATTRS') \
-                        and 'taskName' not in jsonlogger.RESERVED_ATTRS:  # pyright: ignore [reportPrivateImportUsage]
-                    # compatibility with python 3.12, that added a new attribute to LogRecord
-                    jsonlogger.RESERVED_ATTRS += ('taskName',)  # pyright: ignore
-
-            return jsonlogger.JsonFormatter(  # pyright: ignore [reportPrivateImportUsage]
-                jsonformat,
-                dateformat,
-                rename_fields=rename_fields,
-                static_fields=static_fields
-            )
-        except ImportError as e:
-            _LOGGER.error('Failed to import "python-json-logger" library: %r. Falling back to the plain logger', e)
-        except Exception as e:
-            _LOGGER.error('Failed to initialize JsonFormatter: %r. Falling back to the plain logger', e)
-
-        return self._get_plain_formatter(jsonformat, dateformat)
+        pass
 
     def _get_formatter(self, config: Dict[str, Any]) -> logging.Formatter:
         """Returns a logging formatter based on the type of logger in the given configuration.
@@ -422,21 +290,7 @@ class PatroniLogger(Thread):
 
         :returns: A :class:`logging.Formatter` object that can be used to format log records.
         """
-        logtype = config.get('type', PatroniLogger.DEFAULT_TYPE)
-        logformat: type_logformat = config.get('format', PatroniLogger.DEFAULT_FORMAT)
-        dateformat = config.get('dateformat') or None  # Convert empty string to `None`
-        static_fields = config.get('static_fields', {})
-
-        if dateformat is not None and not isinstance(dateformat, str):
-            _LOGGER.warning('Expected log dateformat to be a string, but got "%s"', _type(dateformat))
-            dateformat = None
-
-        if logtype == 'json':
-            formatter = self._get_json_formatter(logformat, dateformat, static_fields)
-        else:
-            formatter = self._get_plain_formatter(logformat, dateformat)
-
-        return formatter
+        pass
 
     def reload_config(self, config: Dict[str, Any]) -> None:
         """Apply log related configuration.
@@ -446,47 +300,7 @@ class PatroniLogger(Thread):
 
         :param config: ``log`` section from Patroni configuration.
         """
-        if self._config is None or not deep_compare(self._config, config):
-            with self._queue_handler.queue.mutex:
-                self._queue_handler.queue.maxsize = config.get('max_queue_size', self.DEFAULT_MAX_QUEUE_SIZE)
-
-            self._root_logger.setLevel(config.get('level', PatroniLogger.DEFAULT_LEVEL))
-            if config.get('traceback_level', PatroniLogger.DEFAULT_TRACEBACK_LEVEL).lower() == 'debug':
-                # show stack traces only if ``log.traceback_level`` is ``DEBUG``
-                logging.Logger.exception = debug_exception
-            else:
-                # show stack traces as ``ERROR`` log messages
-                logging.Logger.exception = error_exception
-
-            handler = self.log_handler
-
-            if 'dir' in config:
-                mode = parse_int(config.get('mode'))
-                if not isinstance(handler, PatroniFileHandler):
-                    handler = PatroniFileHandler(os.path.join(config['dir'], __name__), mode)
-                handler.set_log_file_mode(mode)
-                max_file_size = int(config.get('file_size', 25000000))
-                handler.maxBytes = max_file_size  # pyright: ignore [reportAttributeAccessIssue]
-                handler.backupCount = int(config.get('file_num', 4))
-            # we can't use `if not isinstance(handler, logging.StreamHandler)` below,
-            # because RotatingFileHandler and PatroniFileHandler are children of StreamHandler!!!
-            elif handler is None or isinstance(handler, PatroniFileHandler):
-                handler = logging.StreamHandler()
-
-            is_new_handler = handler != self.log_handler
-
-            if (self._is_config_changed(config) or is_new_handler) and handler:
-                formatter = self._get_formatter(config)
-                handler.setFormatter(formatter)
-
-            if is_new_handler:
-                with self.log_handler_lock:
-                    if self.log_handler:
-                        self._old_handlers.append(self.log_handler)
-                    self.log_handler = handler
-
-            self._config = config.copy()
-            self.update_loggers(config.get('loggers') or {})
+        pass
 
     def _close_old_handlers(self) -> None:
         """Close old log handlers.
@@ -496,62 +310,14 @@ class PatroniLogger(Thread):
             e.g. if we are switching from :class:`PatroniFileHandler` to
             class:`~logging.StreamHandler` and vice-versa.
         """
-        while True:
-            with self.log_handler_lock:
-                if not self._old_handlers:
-                    break
-                handler = self._old_handlers.pop()
-            try:
-                handler.close()
-            except Exception:
-                _LOGGER.exception('Failed to close the old log handler %s', handler)
+        pass
 
     def run(self) -> None:
         """Run logger's thread main loop.
 
         Keep consuming log queue until requested to quit through ``None`` special log record.
         """
-        # switch to QueueHandler only when the thread was started
-        with self.log_handler_lock:
-            self._root_logger.addHandler(self._queue_handler)
-            self._root_logger.removeHandler(self._proxy_handler)
-
-        prev_record = None
-        prev_hb_msg = ''
-
-        while True:
-            self._close_old_handlers()
-            if TYPE_CHECKING:  # pragma: no cover
-                assert self.log_handler is not None
-
-            record = self._queue_handler.queue.get(True)
-            # special message that indicates Patroni is shutting down
-            if record is None:
-                break
-
-            if self._root_logger.level == logging.INFO:
-                # messages like ``Lock owner: postgresql0; I am postgresql1`` will be shown only when stream doesn't
-                # look normal. This is used to reduce chattiness of Patroni logs.
-                if record.msg.startswith('Lock owner: '):
-                    prev_record, record = record, None
-                else:
-                    if prev_record and prev_record.thread == record.thread:
-                        if self._is_heartbeat_msg(record):
-                            config = self._config or {}
-                            deduplicate_heartbeat_logs = config.get('deduplicate_heartbeat_logs', False)
-                            if record.msg == prev_hb_msg and deduplicate_heartbeat_logs:
-                                record = None
-                            else:
-                                prev_hb_msg = record.msg
-                        else:
-                            self.log_handler.handle(prev_record)
-                            prev_hb_msg = None
-                        prev_record = None
-
-            if record:
-                self.log_handler.handle(record)
-
-            self._queue_handler.queue.task_done()
+        pass
 
     @staticmethod
     def _is_heartbeat_msg(record: logging.LogRecord) -> bool:
@@ -561,25 +327,18 @@ class PatroniLogger(Thread):
 
         :returns: ``True`` if the record contains a heartbeat message, ``False`` otherwise.
         """
-        return record.msg.startswith('no action. ') or record.msg.startswith('PAUSE: no action')
+        pass
 
     def shutdown(self) -> None:
         """Shut down the logger thread."""
-        try:
-            # ``None`` is a special message indicating to queue handler that it should quit its main loop.
-            self._queue_handler.queue.put_nowait(None)
-        except Full:  # Queue is full.
-            # It seems that logging is not working, exiting with non-standard exit-code is the best we can do.
-            sys.exit(self.LOGGING_BROKEN_EXIT_CODE)
-        self.join()
-        logging.shutdown()
+        pass
 
     @property
     def queue_size(self) -> int:
         """Number of log records in the queue."""
-        return self._queue_handler.queue.qsize()
+        pass
 
     @property
     def records_lost(self) -> int:
         """Number of logging records that have been lost while the queue was full."""
-        return self._queue_handler.records_lost
+        pass

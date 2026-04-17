@@ -40,27 +40,7 @@ def retry(exceptions: Union[Type[Exception], Tuple[Type[Exception], ...]]) \
             exhausted.
     """
     def decorator(func: Callable[..., Any]) -> Any:
-        def inner_func(instance: object, *args: Any, **kwargs: Any) -> Any:
-            times: int = getattr(instance, "max_retries")
-            retry_wait: int = getattr(instance, "retry_wait")
-            method_name = f"{instance.__class__.__name__}.{func.__name__}"
-
-            attempt = 1
-
-            while attempt <= times:
-                try:
-                    return func(instance, *args, **kwargs)
-                except exceptions as exc:
-                    logging.warning("Attempt %d of %d on method %s failed "
-                                    "with %r.",
-                                    attempt, times, method_name, exc)
-                    attempt += 1
-
-                time.sleep(retry_wait)
-
-            raise RetriesExceeded("Maximum number of retries exceeded for "
-                                  f"method {method_name}.")
-        return inner_func
+        pass
     return decorator
 
 
@@ -69,8 +49,7 @@ def set_up_logging(log_file: Optional[str] = None) -> None:
 
     :param log_file: file where to log messages, if any.
     """
-    logging.basicConfig(filename=log_file, level=logging.INFO,
-                        format="%(asctime)s %(levelname)s: %(message)s")
+    pass
 
 
 class OperationStatus(IntEnum):
@@ -144,7 +123,7 @@ class PgBackupApi:
 
         :returns: the full URL after concatenating.
         """
-        return urljoin(self.api_url, url_path)
+        pass
 
     @staticmethod
     def _deserialize_response(response: HTTPResponse) -> Any:
@@ -154,7 +133,7 @@ class PgBackupApi:
 
         :returns: the deserialized JSON body.
         """
-        return json.loads(response.data.decode("utf-8"))
+        pass
 
     @staticmethod
     def _serialize_request(body: Any) -> Any:
@@ -164,7 +143,7 @@ class PgBackupApi:
 
         :returns: the serialized request body.
         """
-        return json.dumps(body).encode("utf-8")
+        pass
 
     def _get_request(self, url_path: str) -> Any:
         """Perform a ``GET`` request to *url_path*.
@@ -177,16 +156,7 @@ class PgBackupApi:
             :exc:`RetriesExceeded`: raised from the corresponding :mod:`urllib3`
                 exception.
         """
-        url = self._build_full_url(url_path)
-        response = None
-
-        try:
-            response = self._http.request("GET", url)
-        except MaxRetryError as exc:
-            msg = f"Failed to perform a GET request to {url}"
-            raise RetriesExceeded(msg) from exc
-
-        return self._deserialize_response(response)
+        pass
 
     def _post_request(self, url_path: str, body: Any) -> Any:
         """Perform a ``POST`` request to *url_path* serializing *body* as JSON.
@@ -200,23 +170,7 @@ class PgBackupApi:
             :exc:`RetriesExceeded`: raised from the corresponding :mod:`urllib3`
                 exception.
         """
-        body = self._serialize_request(body)
-
-        url = self._build_full_url(url_path)
-        response = None
-
-        try:
-            response = self._http.request("POST",
-                                          url,
-                                          body=body,
-                                          headers={
-                                              "Content-Type": "application/json"
-                                          })
-        except MaxRetryError as exc:
-            msg = f"Failed to perform a POST request to {url} with {body}"
-            raise RetriesExceeded(msg) from exc
-
-        return self._deserialize_response(response)
+        pass
 
     def _ensure_api_ok(self) -> None:
         """Ensure ``pg-backup-api`` is reachable and ``OK``.
@@ -224,15 +178,7 @@ class PgBackupApi:
         :raises:
             :exc:`ApiNotOk`: if ``pg-backup-api`` status is not ``OK``.
         """
-        response = self._get_request("status")
-
-        if response != "OK":
-            msg = (
-                "pg-backup-api is currently not up and running at "
-                f"{self.api_url}: {response}"
-            )
-
-            raise ApiNotOk(msg)
+        pass
 
     @retry(KeyError)
     def get_operation_status(self, barman_server: str,
@@ -245,12 +191,7 @@ class PgBackupApi:
 
         :returns: the status of the operation.
         """
-        response = self._get_request(
-            f"servers/{barman_server}/operations/{operation_id}",
-        )
-
-        status = response["status"]
-        return OperationStatus[status]
+        pass
 
     @retry(KeyError)
     def create_recovery_operation(self, barman_server: str, backup_id: str,
@@ -267,17 +208,7 @@ class PgBackupApi:
 
         :returns: the ID of the recovery operation that has been created.
         """
-        response = self._post_request(
-            f"servers/{barman_server}/operations",
-            {
-                "type": "recovery",
-                "backup_id": backup_id,
-                "remote_ssh_command": ssh_command,
-                "destination_directory": data_directory,
-            },
-        )
-
-        return response["operation_id"]
+        pass
 
     @retry(KeyError)
     def create_config_switch_operation(self, barman_server: str,
@@ -294,16 +225,4 @@ class PgBackupApi:
 
         :returns: the ID of the config switch operation that has been created.
         """
-        body: Dict[str, Any] = {"type": "config_switch"}
-
-        if barman_model:
-            body["model_name"] = barman_model
-        elif reset:
-            body["reset"] = reset
-
-        response = self._post_request(
-            f"servers/{barman_server}/operations",
-            body,
-        )
-
-        return response["operation_id"]
+        pass

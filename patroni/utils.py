@@ -57,26 +57,7 @@ def get_conversion_table(base_unit: str) -> Dict[str, Dict[str, Union[int, float
 
     :returns: :class:`OrderedDict` object.
     """
-    memory_unit_conversion_table: Dict[str, Dict[str, Union[int, float]]] = OrderedDict([
-        ('TB', {'B': 1024**4, 'kB': 1024**3, 'MB': 1024**2}),
-        ('GB', {'B': 1024**3, 'kB': 1024**2, 'MB': 1024}),
-        ('MB', {'B': 1024**2, 'kB': 1024, 'MB': 1}),
-        ('kB', {'B': 1024, 'kB': 1, 'MB': 1024**-1}),
-        ('B', {'B': 1, 'kB': 1024**-1, 'MB': 1024**-2})
-    ])
-    time_unit_conversion_table: Dict[str, Dict[str, Union[int, float]]] = OrderedDict([
-        ('d', {'ms': 1000 * 60**2 * 24, 's': 60**2 * 24, 'min': 60 * 24}),
-        ('h', {'ms': 1000 * 60**2, 's': 60**2, 'min': 60}),
-        ('min', {'ms': 1000 * 60, 's': 60, 'min': 1}),
-        ('s', {'ms': 1000, 's': 1, 'min': 60**-1}),
-        ('ms', {'ms': 1, 's': 1000**-1, 'min': 1 / (1000 * 60)}),
-        ('us', {'ms': 1000**-1, 's': 1000**-2, 'min': 1 / (1000**2 * 60)})
-    ])
-    if base_unit in ('B', 'kB', 'MB'):
-        return memory_unit_conversion_table
-    elif base_unit in ('ms', 's', 'min'):
-        return time_unit_conversion_table
-    return OrderedDict()
+    pass
 
 
 def deep_compare(obj1: Dict[Any, Any], obj2: Dict[Any, Any]) -> bool:
@@ -107,16 +88,7 @@ def deep_compare(obj1: Dict[Any, Any], obj2: Dict[Any, Any]) -> bool:
         >>> deep_compare({'1': {'2': [3, 4]}}, {'1': {'2': [3, 4]}})
         True
     """
-    if set(list(obj1.keys())) != set(list(obj2.keys())):  # Objects have different sets of keys
-        return False
-
-    for key, value in obj1.items():
-        if isinstance(value, dict):
-            if not (isinstance(obj2[key], dict) and deep_compare(cast(Dict[Any, Any], value), obj2[key])):
-                return False
-        elif str(value) != str(obj2[key]):
-            return False
-    return True
+    pass
 
 
 def patch_config(config: Dict[Any, Any], data: Dict[Any, Any]) -> bool:
@@ -134,26 +106,7 @@ def patch_config(config: Dict[Any, Any], data: Dict[Any, Any]) -> bool:
 
     :returns: ``True`` if *config* was changed.
     """
-    is_changed = False
-    for name, value in data.items():
-        if value is None:
-            if config.pop(name, None) is not None:
-                is_changed = True
-        elif name in config:
-            if isinstance(value, dict):
-                if isinstance(config[name], dict):
-                    if patch_config(config[name], cast(Dict[Any, Any], value)):
-                        is_changed = True
-                else:
-                    config[name] = value
-                    is_changed = True
-            elif str(config[name]) != str(value):
-                config[name] = value
-                is_changed = True
-        else:
-            config[name] = value
-            is_changed = True
-    return is_changed
+    pass
 
 
 def parse_bool(value: Any) -> Optional[bool]:
@@ -179,11 +132,7 @@ def parse_bool(value: Any) -> Optional[bool]:
 
         >>> parse_bool('foo')
     """
-    value = str(value).lower()
-    if value in ('on', 'true', 'yes', '1'):
-        return True
-    if value in ('off', 'false', 'no', '0'):
-        return False
+    pass
 
 
 def strtol(value: Any, strict: Optional[bool] = True) -> Tuple[Optional[int], str]:
@@ -231,13 +180,7 @@ def strtol(value: Any, strict: Optional[bool] = True) -> Tuple[Optional[int], st
         >>> strtol(' s ', False) == (1, 's')
         True
     """
-    value = str(value).strip()
-    for regex, base in ((HEX_RE, 16), (OCT_RE, 8), (DEC_RE, 10)):
-        match = regex.match(value)
-        if match:
-            end = match.end()
-            return int(value[:end], base), value[end:]
-    return (None if strict else 1), value
+    pass
 
 
 def strtod(value: Any) -> Tuple[Optional[float], str]:
@@ -266,12 +209,7 @@ def strtod(value: Any) -> Tuple[Optional[float], str]:
         >>> strtod('8.325e-10A B C') == (8.325e-10, 'A B C')
         True
     """
-    value = str(value).strip()
-    match = DBL_RE.match(value)
-    if match:
-        end = match.end()
-        return float(value[:end]), value[end:]
-    return None, value
+    pass
 
 
 def convert_to_base_unit(value: Union[int, float], unit: str, base_unit: Optional[str]) -> Union[int, float, None]:
@@ -305,19 +243,7 @@ def convert_to_base_unit(value: Union[int, float], unit: str, base_unit: Optiona
         >>> convert_to_base_unit(1, 'GB', '512 MB') is None
         True
     """
-    base_value, base_unit = strtol(base_unit, False)
-    if TYPE_CHECKING:  # pragma: no cover
-        assert isinstance(base_value, int)
-
-    convert_tbl = get_conversion_table(base_unit)
-    # {'TB': 'GB', 'GB': 'MB', ...}
-    round_order = dict(zip(convert_tbl, itertools.islice(convert_tbl, 1, None)))
-    if unit in convert_tbl and base_unit in convert_tbl[unit]:
-        value *= convert_tbl[unit][base_unit] / float(base_value)
-        if unit in round_order:
-            multiplier = convert_tbl[round_order[unit]][base_unit]
-            value = round(value / float(multiplier)) * multiplier
-        return value
+    pass
 
 
 def convert_int_from_base_unit(base_value: int, base_unit: Optional[str]) -> Optional[str]:
@@ -352,16 +278,7 @@ def convert_int_from_base_unit(base_value: int, base_unit: Optional[str]) -> Opt
         >>> convert_int_from_base_unit(1024, 'KB') is None
         True
     """
-    base_value_mult, base_unit = strtol(base_unit, False)
-    if TYPE_CHECKING:  # pragma: no cover
-        assert isinstance(base_value_mult, int)
-    base_value *= base_value_mult
-
-    convert_tbl = get_conversion_table(base_unit)
-    for unit in convert_tbl:
-        multiplier = convert_tbl[unit][base_unit]
-        if multiplier <= 1.0 or base_value % multiplier == 0:
-            return str(round(base_value / multiplier)) + unit
+    pass
 
 
 def convert_real_from_base_unit(base_value: float, base_unit: Optional[str]) -> Optional[str]:
@@ -393,19 +310,7 @@ def convert_real_from_base_unit(base_value: float, base_unit: Optional[str]) -> 
         >>> convert_real_from_base_unit(4.0, '256 MB') is None
         True
     """
-    base_value_mult, base_unit = strtol(base_unit, False)
-    if TYPE_CHECKING:  # pragma: no cover
-        assert isinstance(base_value_mult, int)
-    base_value *= base_value_mult
-
-    result = None
-    convert_tbl = get_conversion_table(base_unit)
-    for unit in convert_tbl:
-        value = base_value / convert_tbl[unit][base_unit]
-        result = f'{value:g}{unit}'
-        if value > 0 and abs((round(value) / value) - 1.0) <= 1e-8:
-            break
-    return result
+    pass
 
 
 def maybe_convert_from_base_unit(base_value: str, vartype: str, base_unit: Optional[str]) -> str:
@@ -440,17 +345,7 @@ def maybe_convert_from_base_unit(base_value: str, vartype: str, base_unit: Optio
         >>> maybe_convert_from_base_unit('', 'integer', '256MB')
         ''
     """
-    converters: Dict[str, Tuple[Callable[[str, Optional[str]], Union[int, float, str, None]],
-                                Callable[[Any, Optional[str]], Optional[str]]]] = {
-        'integer': (parse_int, convert_int_from_base_unit),
-        'real': (parse_real, convert_real_from_base_unit),
-        'default': (lambda v, _: v, lambda v, _: v)
-    }
-    parser, converter = converters.get(vartype, converters['default'])
-    parsed_value = parser(base_value, None)
-    if parsed_value:
-        return converter(parsed_value, base_unit) or base_value
-    return base_value
+    pass
 
 
 def parse_int(value: Any, base_unit: Optional[str] = None) -> Optional[int]:
@@ -507,18 +402,7 @@ def parse_int(value: Any, base_unit: Optional[str] = None) -> Optional[int]:
         >>> parse_int('4097.5kB', 'kB') == 4098
         True
     """
-    val, unit = strtol(value)
-    if val is None and unit.startswith('.') or unit and unit[0] in ('.', 'e', 'E'):
-        val, unit = strtod(value)
-
-    if val is not None:
-        unit = unit.strip()
-        if not unit:
-            return round(val)
-
-        val = convert_to_base_unit(val, unit, base_unit)
-        if val is not None:
-            return round(val)
+    pass
 
 
 def parse_real(value: Any, base_unit: Optional[str] = None) -> Optional[float]:
@@ -542,14 +426,7 @@ def parse_real(value: Any, base_unit: Optional[str] = None) -> Optional[float]:
         >>> parse_real('0.00051ms', 'ms') == 0.001
         True
     """
-    val, unit = strtod(value)
-
-    if val is not None:
-        unit = unit.strip()
-        if not unit:
-            return val
-
-        return convert_to_base_unit(val, unit, base_unit)
+    pass
 
 
 def compare_values(vartype: str, unit: Optional[str], settings_value: Any, config_value: Any) -> bool:
@@ -599,19 +476,7 @@ def compare_values(vartype: str, unit: Optional[str], settings_value: Any, confi
         >>> compare_values('integer', 'kB', 4098, '4097.5kB')
         True
     """
-    converters: Dict[str, Callable[[str, Optional[str]], Union[None, bool, int, float, str]]] = {
-        'bool': lambda v1, v2: parse_bool(v1),
-        'integer': parse_int,
-        'real': parse_real,
-        'enum': lambda v1, v2: str(v1).lower(),
-        'string': lambda v1, v2: str(v1)
-    }
-
-    converter = converters.get(vartype) or converters['string']
-    old_converted = converter(settings_value, None)
-    new_converted = converter(config_value, unit)
-
-    return old_converted is not None and new_converted is not None and old_converted == new_converted
+    pass
 
 
 def _sleep(interval: Union[int, float]) -> None:
@@ -620,7 +485,7 @@ def _sleep(interval: Union[int, float]) -> None:
     :param interval: Delay execution for a given number of seconds. The argument may be a floating point number for
         subsecond precision.
     """
-    time.sleep(interval)
+    pass
 
 
 def read_stripped(file_path: str) -> Iterator[str]:
@@ -630,9 +495,7 @@ def read_stripped(file_path: str) -> Iterator[str]:
 
     :yields: each line from the given file stripped
     """
-    with open(file_path) as f:
-        for line in f:
-            yield line.strip()
+    pass
 
 
 class RetryFailedError(PatroniException):
@@ -682,15 +545,11 @@ class Retry(object):
 
     def reset(self) -> None:
         """Reset the attempt counter, delay and stop time."""
-        self._attempts = 0
-        self._cur_delay = self.delay
-        self._cur_stoptime = None
+        pass
 
     def copy(self) -> 'Retry':
         """Return a clone of this retry manager."""
-        return Retry(max_tries=self.max_tries, delay=self.delay, backoff=self.backoff,
-                     max_jitter=self.max_jitter / 100.0, max_delay=int(self.max_delay), sleep_func=self.sleep_func,
-                     deadline=self.deadline, retry_exceptions=self.retry_exceptions)
+        pass
 
     @property
     def sleeptime(self) -> float:
@@ -698,7 +557,7 @@ class Retry(object):
 
         It is based on the current delay plus a number up to ``max_jitter``.
         """
-        return self._cur_delay + (random.randint(0, self.max_jitter) / 100.0)
+        pass
 
     def update_delay(self) -> None:
         """Set next cycle delay.
@@ -708,12 +567,12 @@ class Retry(object):
             * current delay with ``backoff``; or
             * ``max_delay``.
         """
-        self._cur_delay = min(self._cur_delay * self.backoff, self.max_delay)
+        pass
 
     @property
     def stoptime(self) -> float:
         """Get the current stop time."""
-        return self._cur_stoptime or 0
+        pass
 
     def ensure_deadline(self, timeout: float, raise_ex: Optional[Exception] = None) -> bool:
         """Calculates and checks the remaining deadline time.
@@ -727,11 +586,7 @@ class Retry(object):
         :raises:
             :class:`Exception`: *raise_ex* if calculated deadline is smaller than provided *timeout*.
         """
-        if self.stoptime - time.time() < timeout:
-            if raise_ex:
-                raise raise_ex
-            return False
-        return True
+        pass
 
     def __call__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Call a function *func* with arguments ``*args`` and ``*kwargs`` in a loop.
@@ -790,13 +645,7 @@ def polling_loop(timeout: Union[int, float], interval: Union[int, float] = 1) ->
 
     :yields: current iteration counter, starting from ``0``.
     """
-    start_time = time.time()
-    iteration = 0
-    end_time = start_time + timeout
-    while time.time() < end_time:
-        yield iteration
-        iteration += 1
-        time.sleep(float(interval))
+    pass
 
 
 def split_host_port(value: str, default_port: Optional[int]) -> Tuple[str, int]:
@@ -832,12 +681,7 @@ def split_host_port(value: str, default_port: Optional[int]) -> Tuple[str, int]:
         >>> split_host_port('127.0.0.1,www.mydomain.com,[fe80:0:0:0:213:72ff:fe3c:21bf], 0:0:0:0:0:0:0:0:5400', 5432)
         ('127.0.0.1,www.mydomain.com,fe80:0:0:0:213:72ff:fe3c:21bf,0:0:0:0:0:0:0:0', 5400)
     """
-    t = value.rsplit(':', 1)
-    # If *value* contains ``:`` we consider it to be an IPv6 address, so we attempt to remove possible square brackets
-    if ':' in t[0]:
-        t[0] = ','.join([h.strip().strip('[]') for h in t[0].split(',')])
-    t.append(str(default_port))
-    return t[0], int(t[1])
+    pass
 
 
 def uri(proto: str, netloc: Union[List[str], Tuple[str, Union[int, str]], str], path: Optional[str] = '',
@@ -869,14 +713,7 @@ def uri(proto: str, netloc: Union[List[str], Tuple[str, Union[int, str]], str], 
 
     :returns: constructed URI.
     """
-    host, port = netloc if isinstance(netloc, (list, tuple)) else split_host_port(netloc, 0)
-    # If ``host`` contains ``:`` we consider it to be an IPv6 address, so we add square brackets if they are missing
-    if host and ':' in host and host[0] != '[' and host[-1] != ']':
-        host = '[{0}]'.format(host)
-    port = ':{0}'.format(port) if port else ''
-    path = '/{0}'.format(path) if path and not path.startswith('/') else path
-    user = '{0}@'.format(user) if user else ''
-    return '{0}://{1}{2}{3}{4}'.format(proto, user, host, port, path)
+    pass
 
 
 def iter_response_objects(response: HTTPResponse) -> Iterator[Dict[str, Any]]:
@@ -886,28 +723,7 @@ def iter_response_objects(response: HTTPResponse) -> Iterator[Dict[str, Any]]:
 
     :yields: current JSON document.
     """
-    prev = ''
-    decoder = JSONDecoder()
-    for chunk in response.read_chunked(decode_content=False):
-        chunk = prev + chunk.decode('utf-8')
-
-        length = len(chunk)
-        # ``chunk`` is analyzed in parts. ``idx`` holds the position of the first character in the current part that is
-        # neither space nor tab nor line-break, or in other words, the position in the ``chunk`` where it is likely
-        # that a JSON document begins
-        idx = WHITESPACE_RE.match(chunk, 0).end()  # pyright: ignore [reportOptionalMemberAccess]
-        while idx < length:
-            try:
-                # Get a JSON document from the chunk. ``message`` is a dictionary representing the JSON document, and
-                # ``idx`` becomes the position in the ``chunk`` where the retrieved JSON document ends
-                message, idx = decoder.raw_decode(chunk, idx)
-            except ValueError:  # malformed or incomplete JSON, unlikely to happen
-                break
-            else:
-                yield message
-                idx = WHITESPACE_RE.match(chunk, idx).end()  # pyright: ignore [reportOptionalMemberAccess]
-        # It is not usual that a ``chunk`` would contain more than one JSON document, but we handle that just in case
-        prev = chunk[idx:]
+    pass
 
 
 def cluster_as_json(cluster: 'Cluster') -> Dict[str, Any]:
@@ -947,61 +763,7 @@ def cluster_as_json(cluster: 'Cluster') -> Dict[str, Any]:
             * ``from``: name of the member to be demoted;
             * ``to``: name of the member to be promoted.
     """
-    from . import global_config
-    from .postgresql.misc import format_lsn
-
-    config = global_config.from_cluster(cluster)
-    leader_name = cluster.leader.name if cluster.leader else None
-    cluster_lsn = cluster.status.last_lsn
-
-    ret: Dict[str, Any] = {'members': []}
-    sync_role = 'quorum_standby' if config.is_quorum_commit_mode else 'sync_standby'
-    for m in cluster.members:
-        if m.name == leader_name:
-            role = 'standby_leader' if config.is_standby_cluster else 'leader'
-        elif config.is_synchronous_mode and cluster.sync.matches(m.name):
-            role = sync_role
-        else:
-            role = 'replica'
-
-        state = (m.data.get('replication_state', '') if role != 'leader' else '') or m.data.get('state', '')
-        member = {'name': m.name, 'role': role, 'state': state, 'api_url': m.api_url}
-        conn_kwargs = m.conn_kwargs()
-        if conn_kwargs.get('host'):
-            member['host'] = conn_kwargs['host']
-            if conn_kwargs.get('port'):
-                member['port'] = int(conn_kwargs['port'])
-        optional_attributes = ('timeline', 'pending_restart', 'pending_restart_reason', 'scheduled_restart', 'tags')
-        member.update({n: m.data[n] for n in optional_attributes if n in m.data})
-
-        if m.name != leader_name:
-            for location in ('receive_', 'replay_', ''):
-                lsn_type, lag_type = f'{location}lsn', f'{location}lag'
-
-                lsn = getattr(m, lsn_type)
-                if not lsn:
-                    member[lsn_type] = member[lag_type] = 'unknown'
-                elif cluster_lsn >= lsn:
-                    member[lag_type] = cluster_lsn - lsn
-                    member[lsn_type] = format_lsn(lsn)
-                else:
-                    member[lag_type] = 0
-                    member[lsn_type] = format_lsn(lsn)
-
-        ret['members'].append(member)
-
-    # sort members by name for consistency
-    cmp: Callable[[Dict[str, Any]], bool] = lambda m: m['name']
-    ret['members'].sort(key=cmp)
-    if config.is_paused:
-        ret['pause'] = True
-    if cluster.failover and cluster.failover.scheduled_at:
-        ret['scheduled_switchover'] = {'at': cluster.failover.scheduled_at.isoformat()}
-        if cluster.failover.leader:
-            ret['scheduled_switchover']['from'] = cluster.failover.leader
-        if cluster.failover.candidate:
-            ret['scheduled_switchover']['to'] = cluster.failover.candidate
-    return ret
+    pass
 
 
 def is_subpath(d1: str, d2: str) -> bool:
@@ -1016,9 +778,7 @@ def is_subpath(d1: str, d2: str) -> bool:
 
     :returns: ``True`` if *d1* is a subpath of *d2*.
     """
-    real_d1 = os.path.realpath(d1) + os.path.sep
-    real_d2 = os.path.realpath(os.path.join(real_d1, d2))
-    return os.path.commonprefix([real_d1, real_d2 + os.path.sep]) == real_d1
+    pass
 
 
 def validate_directory(d: str, msg: str = "{} {}") -> None:
@@ -1041,22 +801,7 @@ def validate_directory(d: str, msg: str = "{} {}") -> None:
             * *d* is an existing directory, but Patroni is not able to write to that directory; or
             * *d* is an existing file, not a directory.
     """
-    if not os.path.exists(d):
-        try:
-            os.makedirs(d)
-        except OSError as e:
-            logger.error(e)
-            if e.errno != errno.EEXIST:
-                raise PatroniException(msg.format(d, "couldn't create the directory"))
-    elif os.path.isdir(d):
-        try:
-            fd, tmpfile = tempfile.mkstemp(dir=d)
-            os.close(fd)
-            os.remove(tmpfile)
-        except OSError:
-            raise PatroniException(msg.format(d, "the directory is not writable"))
-    else:
-        raise PatroniException(msg.format(d, "is not a directory"))
+    pass
 
 
 def data_directory_is_empty(data_dir: str) -> bool:
@@ -1070,9 +815,7 @@ def data_directory_is_empty(data_dir: str) -> bool:
 
     :returns: ``True`` if *data_dir* is empty.
     """
-    if not os.path.exists(data_dir):
-        return True
-    return all(os.name != 'nt' and (n.startswith('.') or n == 'lost+found') for n in os.listdir(data_dir))
+    pass
 
 
 def apply_keepalive_limit(option: str, value: int) -> int:
@@ -1090,16 +833,7 @@ def apply_keepalive_limit(option: str, value: int) -> int:
 
     :returns: maybe adjusted value.
     """
-    max_of_options = {
-        'linux': {'TCP_USER_TIMEOUT': 2147483647, 'TCP_KEEPIDLE': 32767, 'TCP_KEEPINTVL': 32767, 'TCP_KEEPCNT': 127},
-        'darwin': {'TCP_KEEPIDLE': 4294967, 'TCP_KEEPINTVL': 4294967, 'TCP_KEEPCNT': 2147483647},
-    }
-    platform = 'linux' if sys.platform.startswith('linux') else sys.platform
-    max_possible_value = max_of_options.get(platform, {}).get(option)
-    if max_possible_value is not None and value > max_possible_value:
-        logger.debug('%s changed from %d to %d.', option, value, max_possible_value)
-        value = max_possible_value
-    return value
+    pass
 
 
 def keepalive_intvl(timeout: int, idle: int, cnt: int = 3) -> int:
@@ -1111,8 +845,7 @@ def keepalive_intvl(timeout: int, idle: int, cnt: int = 3) -> int:
 
     :returns: the value to be used as ``TCP_KEEPINTVL``.
     """
-    intvl = max(1, int(float(timeout - idle) / cnt))
-    return apply_keepalive_limit('TCP_KEEPINTVL', intvl)
+    pass
 
 
 def keepalive_socket_options(timeout: int, idle: int, cnt: int = 3) -> Iterator[Tuple[int, int, int]]:
@@ -1139,28 +872,7 @@ def keepalive_socket_options(timeout: int, idle: int, cnt: int = 3) -> Iterator[
                 * ``TCP_KEEPINTVL``;
                 * ``TCP_KEEPCNT``.
     """
-    yield (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-
-    if not (sys.platform.startswith('linux') or sys.platform.startswith('darwin')):
-        return
-
-    TCP_USER_TIMEOUT = getattr(socket, 'TCP_USER_TIMEOUT', None)
-    if TCP_USER_TIMEOUT is not None:
-        yield (socket.SOL_TCP, TCP_USER_TIMEOUT, apply_keepalive_limit('TCP_USER_TIMEOUT', int(timeout * 1000)))
-    # The socket constants from MacOS netinet/tcp.h are not exported by python's
-    # socket module, therefore we are using 0x10, 0x101, 0x102 constants.
-    TCP_KEEPIDLE = getattr(socket, 'TCP_KEEPIDLE', 0x10 if sys.platform.startswith('darwin') else None)
-    if TCP_KEEPIDLE is not None:
-        idle = apply_keepalive_limit('TCP_KEEPIDLE', idle)
-        yield (socket.IPPROTO_TCP, TCP_KEEPIDLE, idle)
-    TCP_KEEPINTVL = getattr(socket, 'TCP_KEEPINTVL', 0x101 if sys.platform.startswith('darwin') else None)
-    if TCP_KEEPINTVL is not None:
-        intvl = keepalive_intvl(timeout, idle, cnt)
-        yield (socket.IPPROTO_TCP, TCP_KEEPINTVL, intvl)
-    TCP_KEEPCNT = getattr(socket, 'TCP_KEEPCNT', 0x102 if sys.platform.startswith('darwin') else None)
-    if TCP_KEEPCNT is not None:
-        cnt = apply_keepalive_limit('TCP_KEEPCNT', cnt)
-        yield (socket.IPPROTO_TCP, TCP_KEEPCNT, cnt)
+    pass
 
 
 def enable_keepalive(sock: socket.socket, timeout: int, idle: int, cnt: int = 3) -> None:
@@ -1179,13 +891,7 @@ def enable_keepalive(sock: socket.socket, timeout: int, idle: int, cnt: int = 3)
 
     :returns: output of :func:`~socket.ioctl` if we are on Windows, nothing otherwise.
     """
-    SIO_KEEPALIVE_VALS = getattr(socket, 'SIO_KEEPALIVE_VALS', None)
-    if SIO_KEEPALIVE_VALS is not None:  # Windows
-        intvl = keepalive_intvl(timeout, idle, cnt)
-        sock.ioctl(SIO_KEEPALIVE_VALS, (1, idle * 1000, intvl * 1000))
-
-    for opt in keepalive_socket_options(timeout, idle, cnt):
-        sock.setsockopt(*opt)
+    pass
 
 
 def unquote(string: str) -> str:
@@ -1213,12 +919,7 @@ def unquote(string: str) -> str:
         >>> unquote('unbalanced "quoted string')
         'unbalanced "quoted string'
     """
-    try:
-        ret = split(string)
-        ret = ret[0] if len(ret) == 1 else string
-    except ValueError:
-        ret = string
-    return ret
+    pass
 
 
 def get_postgres_version(bin_dir: Optional[str] = None, bin_name: str = 'postgres') -> str:
@@ -1240,23 +941,7 @@ def get_postgres_version(bin_dir: Optional[str] = None, bin_name: str = 'postgre
         * Returns `9.6.24` for PostgreSQL 9.6.24
         * Returns `15.2` for PostgreSQL 15.2
     """
-    if not bin_dir:
-        binary = bin_name
-    else:
-        binary = os.path.join(bin_dir, bin_name)
-    try:
-        version = subprocess.check_output([binary, '--version']).decode()
-    except OSError as e:
-        raise PatroniException(f'Failed to get postgres version: {e}')
-    version = re.match(r'^[^\s]+ [^\s]+ ((\d+)(\.\d+)*)', version)
-    if TYPE_CHECKING:  # pragma: no cover
-        assert version is not None
-    version = version.groups()  # e.g., ('15.2', '15', '.2')
-    major_version = int(version[1])
-    dot_count = version[0].count('.')
-    if major_version < 10 and dot_count < 2 or major_version >= 10 and dot_count < 1:
-        return '.'.join((version[0], '0'))
-    return version[0]
+    pass
 
 
 def get_major_version(bin_dir: Optional[str] = None, bin_name: str = 'postgres') -> str:
@@ -1278,8 +963,7 @@ def get_major_version(bin_dir: Optional[str] = None, bin_name: str = 'postgres')
         * Returns `9.6` for PostgreSQL 9.6.24
         * Returns `15` for PostgreSQL 15.2
     """
-    full_version = get_postgres_version(bin_dir, bin_name)
-    return re.sub(r'\.\d+$', '', full_version)
+    pass
 
 
 def process_user_options(tool: str, options: Any,
@@ -1327,39 +1011,4 @@ def process_user_options(tool: str, options: Any,
     :param error_handler: A function which will be called when an error condition is encountered
     :returns: List of long form arguments to pass to the named tool
     """
-    user_options: List[str] = []
-
-    def option_is_allowed(name: str) -> bool:
-        ret = name not in not_allowed_options
-        if not ret:
-            error_handler('{0} option for {1} is not allowed'.format(name, tool))
-        return ret
-
-    if isinstance(options, dict):
-        for key, val in cast(Dict[str, str], options).items():
-            if key and val and option_is_allowed(key):
-                user_options.append('--{0}={1}'.format(key, unquote(val)))
-    elif isinstance(options, list):
-        for opt in cast(List[Any], options):
-            if isinstance(opt, str):
-                # This if needs to be nested, otherwise we confuse the user by logging two errors -- one issued by
-                # option_is_allowed and another by the else clause below.
-                if option_is_allowed(opt):
-                    user_options.append('--{0}'.format(opt))
-            elif isinstance(opt, dict):
-                args = cast(Dict[str, Any], opt)
-                keys = list(args.keys())
-                if len(keys) == 1 and isinstance(args[keys[0]], str):
-                    # This if needs to be nested, otherwise we confuse the user by logging two errors -- one issued by
-                    # option_is_allowed and another by the else clause below.
-                    if option_is_allowed(keys[0]):
-                        user_options.append('--{0}={1}'.format(keys[0], unquote(args[keys[0]])))
-                else:
-                    error_handler('Error when parsing {0} key-value option {1}: only one key-value is allowed'
-                                  ' and value should be a string'.format(tool, args[keys[0]]))
-            else:
-                error_handler('Error when parsing {0} option {1}: value should be string value'
-                              ' or a single key-value pair'.format(tool, opt))
-    else:
-        error_handler('{0} options must be list or dict'.format(tool))
-    return user_options
+    pass

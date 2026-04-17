@@ -51,14 +51,7 @@ class ExitCode(IntEnum):
 
 # We need to know the current PG version in order to figure out the correct WAL directory name
 def get_major_version(data_dir: str) -> float:
-    version_file = os.path.join(data_dir, 'PG_VERSION')
-    if os.path.isfile(version_file):  # version file exists
-        try:
-            with open(version_file) as f:
-                return float(f.read())
-        except Exception:
-            logger.exception('Failed to read PG_VERSION from %s', data_dir)
-    return 0.0
+    pass
 
 
 def repr_size(n_bytes: float) -> str:
@@ -68,13 +61,7 @@ def repr_size(n_bytes: float) -> str:
     >>> repr_size(8257332324597)
     '7.5 TiB'
     """
-    if n_bytes < 1024:
-        return '{0} Bytes'.format(n_bytes)
-    i = -1
-    while n_bytes > 1023:
-        n_bytes /= 1024.0
-        i += 1
-    return '{0} {1}iB'.format(round(n_bytes, 1), si_prefixes[i])
+    pass
 
 
 def size_as_bytes(size: float, prefix: str) -> int:
@@ -82,13 +69,7 @@ def size_as_bytes(size: float, prefix: str) -> int:
     >>> size_as_bytes(7.5, 'T')
     8246337208320
     """
-    prefix = prefix.upper()
-
-    assert prefix in si_prefixes
-
-    exponent = si_prefixes.index(prefix) + 1
-
-    return int(size * (1024.0 ** exponent))
+    pass
 
 
 class WALEConfig(NamedTuple):
@@ -137,198 +118,19 @@ class WALERestore(object):
             2 = Error, don't try again
 
         """
-        if self.init_error:
-            logger.error('init error: %r did not exist at initialization time',
-                         self.wal_e.env_dir)
-            return ExitCode.FAIL
-
-        try:
-            should_use_s3 = self.should_use_s3_to_create_replica()
-            if should_use_s3 is None:  # Need to retry
-                return ExitCode.RETRY_LATER
-            elif should_use_s3:
-                return self.create_replica_with_s3()
-            elif not should_use_s3:
-                return ExitCode.FAIL
-        except Exception:
-            logger.exception("Unhandled exception when running WAL-E restore")
-        return ExitCode.FAIL
+        pass
 
     def should_use_s3_to_create_replica(self) -> Optional[bool]:
         """ determine whether it makes sense to use S3 and not pg_basebackup """
-
-        threshold_megabytes = self.wal_e.threshold_mb
-        threshold_percent = self.wal_e.threshold_pct
-
-        try:
-            cmd = self.wal_e.cmd + ['backup-list', '--detail', 'LATEST']
-
-            logger.debug('calling %r', cmd)
-            wale_output = subprocess.check_output(cmd)
-
-            reader = csv.DictReader(wale_output.decode('utf-8').splitlines(),
-                                    dialect='excel-tab')
-            rows = list(reader)
-            if not len(rows):
-                logger.warning('wal-e did not find any backups')
-                return False
-
-            # This check might not add much, it was performed in the previous
-            # version of this code. since the old version rolled CSV parsing the
-            # check may have been part of the CSV parsing.
-            if len(rows) > 1:
-                logger.warning(
-                    'wal-e returned more than one row of backups: %r',
-                    rows)
-                return False
-
-            backup_info = rows[0]
-        except subprocess.CalledProcessError:
-            logger.exception("could not query wal-e latest backup")
-            return None
-
-        try:
-            backup_size = int(backup_info['expanded_size_bytes'])
-            backup_start_segment = backup_info['wal_segment_backup_start']
-            backup_start_offset = backup_info['wal_segment_offset_backup_start']
-        except KeyError:
-            logger.exception("unable to get some of WALE backup parameters")
-            return None
-
-        # WAL filename is XXXXXXXXYYYYYYYY000000ZZ, where X - timeline, Y - LSN logical log file,
-        # ZZ - 2 high digits of LSN offset. The rest of the offset is the provided decimal offset,
-        # that we have to convert to hex and 'prepend' to the high offset digits.
-
-        lsn_segment = backup_start_segment[8:16]
-        # first 2 characters of the result are 0x and the last one is L
-        lsn_offset = hex((int(backup_start_segment[16:32], 16) << 24) + int(backup_start_offset))[2:-1]
-
-        # construct the LSN from the segment and offset
-        backup_start_lsn = '{0}/{1}'.format(lsn_segment, lsn_offset)
-
-        diff_in_bytes = backup_size
-        attempts_no = 0
-        while True:
-            if self.leader_connection:
-                con = None
-                try:
-                    # get the difference in bytes between the current WAL location and the backup start offset
-                    con = psycopg.connect(self.leader_connection)
-                    if getattr(con, 'server_version', 0) >= 100000:
-                        wal_name = 'wal'
-                        lsn_name = 'lsn'
-                    else:
-                        wal_name = 'xlog'
-                        lsn_name = 'location'
-                    with con.cursor() as cur:
-                        cur.execute(("SELECT CASE WHEN pg_catalog.pg_is_in_recovery()"
-                                     " THEN GREATEST(pg_catalog.pg_{0}_{1}_diff(COALESCE("
-                                     "pg_last_{0}_receive_{1}(), '0/0'), %s)::bigint, "
-                                     "pg_catalog.pg_{0}_{1}_diff(pg_catalog.pg_last_{0}_replay_{1}(), %s)::bigint)"
-                                     " ELSE pg_catalog.pg_{0}_{1}_diff(pg_catalog.pg_current_{0}_{1}(), %s)::bigint"
-                                     " END").format(wal_name, lsn_name),
-                                    (backup_start_lsn, backup_start_lsn, backup_start_lsn))
-                        for row in cur:
-                            diff_in_bytes = int(row[0])
-                            break
-                except psycopg.Error:
-                    logger.exception('could not determine difference with the leader location')
-                    if attempts_no < self.retries:  # retry in case of a temporarily connection issue
-                        attempts_no = attempts_no + 1
-                        time.sleep(RETRY_SLEEP_INTERVAL)
-                        continue
-                    else:
-                        if not self.no_leader:
-                            return False  # do no more retries on the outer level
-                        logger.info("continue with base backup from S3 since leader is not available")
-                        diff_in_bytes = 0
-                        break
-                finally:
-                    if con:
-                        con.close()
-            else:
-                # always try to use WAL-E if leader connection string is not available
-                diff_in_bytes = 0
-            break
-
-        # if the size of the accumulated WAL segments is more than a certain percentage of the backup size
-        # or exceeds the pre-determined size - pg_basebackup is chosen instead.
-        is_size_thresh_ok = diff_in_bytes < int(threshold_megabytes) * 1048576
-        threshold_pct_bytes = backup_size * threshold_percent / 100.0
-        is_percentage_thresh_ok = float(diff_in_bytes) < int(threshold_pct_bytes)
-        are_thresholds_ok = is_size_thresh_ok and is_percentage_thresh_ok
-
-        class Size(object):
-            def __init__(self, n_bytes: float, prefix: Optional[str] = None) -> None:
-                self.n_bytes = n_bytes
-                self.prefix = prefix
-
-            def __repr__(self) -> str:
-                if self.prefix is not None:
-                    n_bytes = size_as_bytes(self.n_bytes, self.prefix)
-                else:
-                    n_bytes = self.n_bytes
-                return repr_size(n_bytes)
-
-        class HumanContext(object):
-            def __init__(self, items: List[Tuple[str, Any]]) -> None:
-                self.items = items
-
-            def __repr__(self) -> str:
-                return ', '.join('{}={!r}'.format(key, value)
-                                 for key, value in self.items)
-
-        human_context = repr(HumanContext([
-            ('threshold_size', Size(threshold_megabytes, 'M')),
-            ('threshold_percent', threshold_percent),
-            ('threshold_percent_size', Size(threshold_pct_bytes)),
-            ('backup_size', Size(backup_size)),
-            ('backup_diff', Size(diff_in_bytes)),
-            ('is_size_thresh_ok', is_size_thresh_ok),
-            ('is_percentage_thresh_ok', is_percentage_thresh_ok),
-        ]))
-
-        if not are_thresholds_ok:
-            logger.info('wal-e backup size diff is over threshold, falling back '
-                        'to other means of restore: %s', human_context)
-        else:
-            logger.info('Thresholds are OK, using wal-e basebackup: %s', human_context)
-        return are_thresholds_ok
+        pass
 
     def fix_subdirectory_path_if_broken(self, dirname: str) -> bool:
         # in case it is a symlink pointing to a non-existing location, remove it and create the actual directory
-        path = os.path.join(self.data_dir, dirname)
-        if not os.path.exists(path):
-            if os.path.islink(path):  # broken xlog symlink, to remove
-                try:
-                    os.remove(path)
-                except OSError:
-                    logger.exception("could not remove broken %s symlink pointing to %s",
-                                     dirname, os.readlink(path))
-                    return False
-            try:
-                os.mkdir(path)
-            except OSError:
-                logger.exception("could not create missing %s directory path", dirname)
-                return False
-        return True
+        pass
 
     def create_replica_with_s3(self) -> int:
         # if we're set up, restore the replica using fetch latest
-        try:
-            cmd = self.wal_e.cmd + ['backup-fetch',
-                                    '{}'.format(self.data_dir),
-                                    'LATEST']
-            logger.debug('calling: %r', cmd)
-            exit_code = subprocess.call(cmd)
-        except Exception as e:
-            logger.error('Error when fetching backup with WAL-E: %r', e)
-            return ExitCode.RETRY_LATER
-
-        if (exit_code == 0 and not
-           self.fix_subdirectory_path_if_broken('pg_xlog' if get_major_version(self.data_dir) < 10 else 'pg_wal')):
-            return ExitCode.FAIL
-        return exit_code
+        pass
 
 
 def main() -> int:

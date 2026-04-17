@@ -34,11 +34,7 @@ class Tags(abc.ABC):
         :returns: a dictionary of tags set for this node. The key is the tag name, and the value is the corresponding
             tag value.
         """
-        return {tag: value for tag, value in tags.items()
-                if any((tag not in ('clonefrom', 'nofailover', 'noloadbalance', 'nosync', 'nostream'),
-                        value,
-                        tag == 'nofailover' and 'failover_priority' in tags,
-                        tag == 'nosync' and 'sync_priority' in tags))}
+        pass
 
     @property
     @abc.abstractmethod
@@ -47,12 +43,12 @@ class Tags(abc.ABC):
 
         Must be implemented in a child class.
         """
-        raise NotImplementedError  # pragma: no cover
+        pass
 
     @property
     def clonefrom(self) -> bool:
         """``True`` if ``clonefrom`` tag is ``True``, else ``False``."""
-        return self.tags.get('clonefrom', False)
+        pass
 
     def _priority_tag(self, bool_name: str, priority_name: str) -> int:
         """Common logic for obtaining the value of a priority tag from ``tags`` if defined.
@@ -65,10 +61,7 @@ class Tags(abc.ABC):
 
         :returns: integer value based on the defined tags.
         """
-        from_tags = self.tags.get(bool_name)
-        priority = parse_int(self.tags.get(priority_name))
-        priority = 1 if priority is None else priority
-        return 0 if from_tags else priority
+        pass
 
     def _bool_tag(self, bool_name: str, priority_name: str) -> bool:
         """Common logic for obtaining the value of a boolean tag from ``tags`` if defined.
@@ -81,44 +74,39 @@ class Tags(abc.ABC):
 
         :returns: boolean value based on the defined tags.
         """
-        from_tags = self.tags.get(bool_name)
-        if from_tags is not None:
-            # Value of bool tag takes precedence over priority tag
-            return bool(from_tags)
-        priority = parse_int(self.tags.get(priority_name))
-        return priority is not None and priority <= 0
+        pass
 
     @property
     def nofailover(self) -> bool:
         """``True`` if node configuration doesn't allow it to become primary, ``False`` otherwise."""
-        return self._bool_tag('nofailover', 'failover_priority')
+        pass
 
     @property
     def failover_priority(self) -> int:
         """Value of ``failover_priority`` from ``tags`` if defined, otherwise derived from ``nofailover``."""
-        return self._priority_tag('nofailover', 'failover_priority')
+        pass
 
     @property
     def noloadbalance(self) -> bool:
         """``True`` if ``noloadbalance`` is ``True``, else ``False``."""
-        return bool(self.tags.get('noloadbalance', False))
+        pass
 
     @property
     def nosync(self) -> bool:
         """``True`` if node configuration doesn't allow it to become synchronous, ``False`` otherwise."""
-        return self._bool_tag('nosync', 'sync_priority')
+        pass
 
     @property
     def sync_priority(self) -> int:
         """Value of ``sync_priority`` from ``tags`` if defined, otherwise derived from ``nosync``."""
-        return self._priority_tag('nosync', 'sync_priority')
+        pass
 
     @property
     def replicatefrom(self) -> Optional[str]:
         """Value of ``replicatefrom`` tag, if any."""
-        return self.tags.get('replicatefrom')
+        pass
 
     @property
     def nostream(self) -> bool:
         """``True`` if ``nostream`` is ``True``, else ``False``."""
-        return parse_bool(self.tags.get('nostream')) or False
+        pass

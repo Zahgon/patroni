@@ -26,7 +26,7 @@ def populate_validate_params(ignore_listen_port: bool = False) -> None:
 
     :param ignore_listen_port: ignore the bind failures for the ports marked as `listen`.
     """
-    _validation_params['ignore_listen_port'] = ignore_listen_port
+    pass
 
 
 def validate_log_field(field: Any) -> bool:
@@ -37,12 +37,7 @@ def validate_log_field(field: Any) -> bool:
     :returns: ``True`` if the field is either a string or a dictionary with exactly one key
               that has string value, ``False`` otherwise.
     """
-    if isinstance(field, str):
-        return True
-    elif isinstance(field, dict):
-        field = cast(Dict[str, Any], field)
-        return len(field) == 1 and isinstance(next(iter(field.values())), str)
-    return False
+    pass
 
 
 def validate_log_format(logformat: type_logformat) -> bool:
@@ -59,18 +54,7 @@ def validate_log_format(logformat: type_logformat) -> bool:
             * If the log format is a list and it with values that don't pass validation using
               :func:`validate_log_field`.
     """
-    if isinstance(logformat, str):
-        return True
-    elif isinstance(logformat, list):
-        logformat = cast(List[Any], logformat)
-        if len(logformat) == 0:
-            raise ConfigParseError('should contain at least one item')
-        if not all(map(validate_log_field, logformat)):
-            raise ConfigParseError('each item should be a string or a dictionary with string values')
-
-        return True
-    else:
-        raise ConfigParseError('Should be a string or a list')
+    pass
 
 
 def data_directory_empty(data_dir: str) -> bool:
@@ -80,9 +64,7 @@ def data_directory_empty(data_dir: str) -> bool:
 
     :returns: ``True`` if the data directory is empty.
     """
-    if os.path.isfile(os.path.join(data_dir, "global", "pg_control")):
-        return False
-    return data_directory_is_empty(data_dir)
+    pass
 
 
 def validate_connect_address(address: str) -> bool:
@@ -97,13 +79,7 @@ def validate_connect_address(address: str) -> bool:
             * If the address is not in the expected format; or
             * If the host is set to not allowed values (``127.0.0.1``, ``0.0.0.0``, ``*``, ``::1``, or ``localhost``).
     """
-    try:
-        host, _ = split_host_port(address, 1)
-    except (AttributeError, TypeError, ValueError):
-        raise ConfigParseError("contains a wrong value")
-    if host in ["127.0.0.1", "0.0.0.0", "*", "::1", "localhost"]:
-        raise ConfigParseError('must not contain "127.0.0.1", "0.0.0.0", "*", "::1", "localhost"')
-    return True
+    pass
 
 
 def validate_host_port(host_port: str, listen: bool = False, multiple_hosts: bool = False) -> bool:
@@ -129,40 +105,7 @@ def validate_host_port(host_port: str, listen: bool = False, multiple_hosts: boo
             * If :class:`~socket.gaierror` is thrown by socket module when attempting to connect to the given
               address(es).
     """
-    try:
-        hosts, port = split_host_port(host_port, 1)
-    except (ValueError, TypeError):
-        raise ConfigParseError("contains a wrong value")
-    else:
-        if multiple_hosts:
-            hosts = hosts.split(",")
-        else:
-            hosts = [hosts]
-
-        # If host is set to "*" get all hostnames and/or IP addresses that the host would be able to listen to
-        if "*" in hosts:
-            if len(hosts) != 1:
-                raise ConfigParseError("expecting '*' alone")
-            # Filter out unexpected results when python is compiled with --disable-ipv6 and running on IPv6 system.
-            hosts = [a[4][0] for a in socket.getaddrinfo(None, port, 0, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
-                     if isinstance(a[4][0], str)]
-        for host in hosts:
-            # Check if "socket.IF_INET" or "socket.IF_INET6" is being used and instantiate a socket with the identified
-            # protocol
-            proto = socket.getaddrinfo(host, None, 0, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
-            s = socket.socket(proto[0][0], socket.SOCK_STREAM)
-            try:
-                if s.connect_ex((host, port)) == 0:
-                    # Do not raise an exception if ignore_listen_port is set to True.
-                    if listen and not _validation_params.get('ignore_listen_port', False):
-                        raise ConfigParseError("Port {} is already in use.".format(port))
-                elif not listen:
-                    raise ConfigParseError("{} is not reachable".format(host_port))
-            except socket.gaierror as e:
-                raise ConfigParseError(e)
-            finally:
-                s.close()
-    return True
+    pass
 
 
 def validate_host_port_list(value: List[str]) -> bool:
@@ -177,8 +120,7 @@ def validate_host_port_list(value: List[str]) -> bool:
     .. note::
         :func:`validate_host_port` will raise an exception if validation failed.
     """
-
-    return all(validate_host_port(v) for v in value)
+    pass
 
 
 def comma_separated_host_port(string: str) -> bool:
@@ -190,7 +132,7 @@ def comma_separated_host_port(string: str) -> bool:
 
     :returns: ``True`` if all items in the CSV string are valid.
     """
-    return validate_host_port_list([s.strip() for s in string.split(",")])
+    pass
 
 
 def validate_host_port_listen(host_port: str) -> bool:
@@ -203,7 +145,7 @@ def validate_host_port_listen(host_port: str) -> bool:
 
     :returns: ``True`` if the host and port are valid and available for binding.
     """
-    return validate_host_port(host_port, listen=True)
+    pass
 
 
 def validate_host_port_listen_multiple_hosts(host_port: str) -> bool:
@@ -218,7 +160,7 @@ def validate_host_port_listen_multiple_hosts(host_port: str) -> bool:
 
     :returns: ``True`` if the host(s) and port are valid and available for binding.
     """
-    return validate_host_port(host_port, listen=True, multiple_hosts=True)
+    pass
 
 
 def is_ipv4_address(ip: str) -> bool:
@@ -231,11 +173,7 @@ def is_ipv4_address(ip: str) -> bool:
     :raises:
         :class:`~patroni.exceptions.ConfigParseError`: if *ip* is not a valid IPv4 address.
     """
-    try:
-        socket.inet_aton(ip)
-    except Exception:
-        raise ConfigParseError("Is not a valid ipv4 address")
-    return True
+    pass
 
 
 def is_ipv6_address(ip: str) -> bool:
@@ -248,11 +186,7 @@ def is_ipv6_address(ip: str) -> bool:
     :raises:
         :class:`~patroni.exceptions.ConfigParseError`: if *ip* is not a valid IPv6 address.
     """
-    try:
-        socket.inet_pton(socket.AF_INET6, ip)
-    except Exception:
-        raise ConfigParseError("Is not a valid ipv6 address")
-    return True
+    pass
 
 
 def get_bin_name(bin_name: str) -> str:
@@ -262,8 +196,7 @@ def get_bin_name(bin_name: str) -> str:
 
     :returns: value of ``postgresql.bin_name[*bin_name*]``, if present, otherwise *bin_name*.
     """
-    data = cast(Dict[Any, Any], schema.data)
-    return (data.get('postgresql', {}).get('bin_name', {}) or EMPTY_DICT).get(bin_name, bin_name)
+    pass
 
 
 def validate_data_dir(data_dir: str) -> bool:
@@ -288,27 +221,7 @@ def validate_data_dir(data_dir: str) -> bool:
                 * ``pg_wal``/``pg_xlog`` is not available in the directory
                 * ``PG_VERSION`` content does not match the major version reported by ``postgres --version``
     """
-    if not data_dir:
-        raise ConfigParseError("is an empty string")
-    elif os.path.exists(data_dir) and not os.path.isdir(data_dir):
-        raise ConfigParseError("is not a directory")
-    elif not data_directory_empty(data_dir):
-        if not os.path.exists(os.path.join(data_dir, "PG_VERSION")):
-            raise ConfigParseError("doesn't look like a valid data directory")
-        else:
-            with open(os.path.join(data_dir, "PG_VERSION"), "r") as version:
-                pgversion = version.read().strip()
-            waldir = ("pg_wal" if float(pgversion) >= 10 else "pg_xlog")
-            if not os.path.isdir(os.path.join(data_dir, waldir)):
-                raise ConfigParseError("data dir for the cluster is not empty, but doesn't contain"
-                                       " \"{}\" directory".format(waldir))
-            data = cast(Dict[Any, Any], schema.data)
-            bin_dir = data.get("postgresql", {}).get("bin_dir", None)
-            major_version = get_major_version(bin_dir, get_bin_name('postgres'))
-            if pgversion != major_version:
-                raise ConfigParseError("data_dir directory postgresql version ({}) doesn't match with "
-                                       "'postgres --version' output ({})".format(pgversion, major_version))
-    return True
+    pass
 
 
 def validate_binary_name(bin_name: str) -> bool:
@@ -336,13 +249,7 @@ def validate_binary_name(bin_name: str) -> bool:
             * the *bin_name* cannot be found in the system PATH
 
     """
-    if not bin_name:
-        raise ConfigParseError("is an empty string")
-    data = cast(Dict[Any, Any], schema.data)
-    bin_dir = data.get('postgresql', {}).get('bin_dir', None)
-    if not shutil.which(bin_name, path=bin_dir):
-        raise ConfigParseError(f"does not contain '{bin_name}' in '{bin_dir or '$PATH'}'")
-    return True
+    pass
 
 
 class Result(object):
@@ -519,9 +426,7 @@ class Directory(object):
 
         :yields: objects with the error message containing the name of the executable, if any check fails.
         """
-        for program in self.contains_executable or []:
-            if not shutil.which(program, path=path):
-                yield Result(False, f"does not contain '{program}' in '{(path or '$PATH')}'")
+        pass
 
     def validate(self, name: str) -> Iterator[Result]:
         """Check if the expected paths and executables can be found under *name* directory.
@@ -531,18 +436,7 @@ class Directory(object):
 
         :yields: objects with the error message related to the failure, if any check fails.
         """
-        if not name:
-            yield from self._check_executables()
-        elif not os.path.exists(name):
-            yield Result(False, "Directory '{}' does not exist.".format(name))
-        elif not os.path.isdir(name):
-            yield Result(False, "'{}' is not a directory.".format(name))
-        else:
-            if self.contains:
-                for path in self.contains:
-                    if not os.path.exists(os.path.join(name, path)):
-                        yield Result(False, "'{}' does not contain '{}'".format(name, path))
-            yield from self._check_executables(path=name)
+        pass
 
 
 class BinDirectory(Directory):
@@ -566,8 +460,7 @@ class BinDirectory(Directory):
 
         :yields: objects with the error message related to the failure, if any check fails.
         """
-        self.contains_executable: List[str] = [get_bin_name(binary) for binary in self.BINARIES]
-        yield from super().validate(name)
+        pass
 
 
 class Schema(object):
@@ -695,93 +588,21 @@ class Schema(object):
 
         :yields: objects with the error message related to the failure, if any check fails.
         """
-        self.data = data
-
-        # New `Schema` objects can be created while validating a given `Schema`, depending on its structure. The first
-        # 3 IF statements deal with the situation where we already reached a leaf node in the `Schema` structure, then
-        # we are dealing with an actual value validation. The remaining logic in this method is used to iterate through
-        # iterable objects in the structure, until we eventually reach a leaf node to validate its value.
-        if isinstance(self.validator, str):
-            yield Result(isinstance(self.data, str), "is not a string", level=1, data=self.data)
-        elif isinstance(self.validator, type):
-            yield Result(isinstance(self.data, self.validator),
-                         "is not {}".format(_get_type_name(self.validator)), level=1, data=self.data)
-        elif callable(self.validator):
-            if hasattr(self.validator, "expected_type"):
-                expected_type = getattr(self.validator, 'expected_type')
-                if not isinstance(data, expected_type):
-                    yield Result(False, "is not {}".format(_get_type_name(expected_type)), level=1, data=self.data)
-                    return
-            try:
-                self.validator(data)
-                yield Result(True, data=self.data)
-            except Exception as e:
-                yield Result(False, "didn't pass validation: {}".format(e), data=self.data)
-        elif isinstance(self.validator, dict):
-            if not isinstance(self.data, dict):
-                yield Result(isinstance(self.data, dict), "is not a dictionary", level=1, data=self.data)
-            else:
-                yield from self.iter_dict()
-        elif isinstance(self.validator, list):
-            if not isinstance(self.data, list):
-                yield Result(isinstance(self.data, list), "is not a list", level=1, data=self.data)
-            else:
-                yield from self.iter_list()
-        elif isinstance(self.validator, Or):
-            yield from self.iter_or()
-        elif isinstance(self.validator, Directory) and isinstance(self.data, str):
-            yield from self.validator.validate(self.data)
+        pass
 
     def iter_list(self) -> Iterator[Result]:
         """Iterate over a ``data`` object and perform validations using the first element of the ``validator``.
 
         :yields: objects with the error message related to the failure, if any check fails.
         """
-        data = cast(List[Any], self.data)
-        if len(data) == 0:
-            yield Result(False, "is an empty list", data=data)
-
-        validators = cast(List[Any], self.validator)
-        if len(validators):
-            for key, value in enumerate(data):
-                # Although the value in the configuration (`data`) is expected to contain 1 or more entries, only
-                # the first validator defined in `validator` property list will be used. It is only defined as a
-                # `list` in `validator` so this logic can understand that the value in `data` attribute should be a
-                # `list`. For example: "pg_hba": [str] in `validator` attribute defines that "pg_hba" in `data`
-                # attribute should contain a list with one or more `str` entries.
-                for v in Schema(validators[0]).validate(value):
-                    yield Result(v.status, v.error,
-                                 path=(str(key) + ("." + v.path if v.path else "")), level=v.level, data=value)
+        pass
 
     def iter_dict(self) -> Iterator[Result]:
         """Iterate over a :class:`dict` based ``validator`` to validate the corresponding entries in ``data``.
 
         :yields: objects with the error message related to the failure, if any check fails.
         """
-        # One key in `validator` attribute (`key` variable) can be mapped to one or more keys in `data` attribute (`d`
-        # variable), depending on the `key` type.
-        data = cast(Dict[Any, Any], self.data)
-        validators = cast(Dict[Any, Any], self.validator)
-        for key in validators.keys():
-            if isinstance(key, AtMostOne) and len(list(self._data_key(key))) > 1:
-                yield Result(False, f"Multiple of {key.args} provided")
-                continue
-            for d in self._data_key(key):
-                if d not in data and not isinstance(key, Optional):
-                    yield Result(False, "is not defined.", path=d)
-                elif d not in data and isinstance(key, Optional) and key.default is None:
-                    continue
-                else:
-                    if d not in data and isinstance(key, Optional):
-                        data[d] = key.default
-                    validator = validators[key]
-                    if isinstance(key, (Or, AtMostOne)) and isinstance(validators[key], Case):
-                        validator = validators[key]._schema[d]
-                    # In this loop we may be calling a new `Schema` either over an intermediate node in the tree, or
-                    # over a leaf node. In the latter case the recursive calls in the given path will finish.
-                    for v in Schema(validator).validate(data[d]):
-                        yield Result(v.status, v.error,
-                                     path=(d + ("." + v.path if v.path else "")), level=v.level, data=v.data)
+        pass
 
     def iter_or(self) -> Iterator[Result]:
         """Perform all validations defined in an :class:`Or` object for a given configuration option.
@@ -791,26 +612,7 @@ class Schema(object):
 
         :yields: objects with the error message related to the failure, if any check fails.
         """
-        if TYPE_CHECKING:  # pragma: no cover
-            assert isinstance(self.validator, Or)
-        results: List[Result] = []
-        for a in self.validator.args:
-            r: List[Result] = []
-            # Each of the `Or` validators can throw 0 to many `Result` instances.
-            for v in Schema(a).validate(self.data):
-                r.append(v)
-            if any([x.status for x in r]) and not all([x.status for x in r]):
-                results += [x for x in r if not x.status]
-            else:
-                results += r
-        # None of the `Or` validators succeeded to validate `data`, so we report the issues back.
-        if not any([x.status for x in results]):
-            max_level = 3
-            for v in sorted(results, key=lambda x: x.level):
-                if v.level > max_level:
-                    break
-                max_level = v.level
-                yield Result(v.status, v.error, path=v.path, level=v.level, data=v.data)
+        pass
 
     def _data_key(self, key: Union[str, Optional, Or, AtMostOne]) -> Iterator[str]:
         """Map a key from the ``validator`` dictionary to the corresponding key(s) in the ``data`` dictionary.
@@ -819,38 +621,7 @@ class Schema(object):
 
         :yields: keys that should be used to access corresponding value in the ``data`` attribute.
         """
-        data = cast(Dict[Any, Any], self.data)
-
-        # If the key was defined as an `Optional` object in `validator` attribute, then its name is the key to access
-        # the `data` dictionary.
-        if isinstance(key, Optional):
-            yield key.name
-        # If the key was defined as a `str` object in `validator` attribute, then it is already the final key
-        # to access the `data` dictionary.
-        elif isinstance(key, str):
-            yield key
-        # If the key was defined as an `Or` object in `validator` attribute, then each of its values are
-        # the keys to access the `data` dictionary.
-        elif isinstance(key, Or):
-            # At least one of the `Or` entries should be available in the `data` dictionary. If we find at least
-            # one of them in `data`, then we return all found entries so the caller method can validate them all.
-            if any([item in data for item in key.args]):
-                for item in key.args:
-                    if item in data:
-                        yield item
-            # If none of the `Or` entries is available in the `data` dictionary, then we return all entries so the
-            # caller method will issue errors that they are all absent.
-            else:
-                for item in key.args:
-                    yield item
-        # If the key was defined as a `AtMostOne` object in `validator` attribute, then each of its values
-        # are the keys to access the `data` dictionary.
-        elif isinstance(key, AtMostOne):  # pyright: ignore [reportUnnecessaryIsInstance]
-            # Yield back all of the entries from the `data` dictionary, each will be validated and then counted
-            # to inform us if we've provided too many
-            for item in key.args:
-                if item in data:
-                    yield item
+        pass
 
 
 def _get_type_name(python_type: Any) -> str:
@@ -860,9 +631,7 @@ def _get_type_name(python_type: Any) -> str:
 
     :returns: User friendly name of the given Python type.
     """
-    types: Dict[Any, str] = {str: 'a string', int: 'an integer', float: 'a number',
-                             bool: 'a boolean', list: 'an array', dict: 'a dictionary'}
-    return types.get(python_type, getattr(python_type, __name__, "unknown type"))
+    pass
 
 
 def assert_(condition: bool, message: str = "Wrong value") -> None:
@@ -873,8 +642,7 @@ def assert_(condition: bool, message: str = "Wrong value") -> None:
     :param condition: result of a condition to be asserted.
     :param message: message to be thrown if the condition is ``False``.
     """
-    if not condition:
-        raise PatroniAssertionError(message)
+    pass
 
 
 class IntValidator(object):
@@ -967,8 +735,7 @@ def validate_watchdog_mode(value: Any) -> None:
 
     :param value: value of ``watchdog.mode`` to be validated.
     """
-    assert_(isinstance(value, (str, bool)), "expected type is not a string")
-    assert_(value in (False, "off", "automatic", "required"))
+    pass
 
 
 userattributes = {"username": "", Optional("password"): ""}

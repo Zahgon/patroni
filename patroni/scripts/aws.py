@@ -45,34 +45,18 @@ class AWSConnection(object):
         return self._retry.copy()(*args, **kwargs)
 
     def aws_available(self) -> bool:
-        return self.available
+        pass
 
     def _tag_ebs(self, conn: Any, role: str) -> None:
         """ set tags, carrying the cluster name, instance role and instance id for the EBS storage """
-        tags = [{'Key': 'Name', 'Value': 'spilo_' + self.cluster_name},
-                {'Key': 'Role', 'Value': role},
-                {'Key': 'Instance', 'Value': self.instance_id}]
-        volumes = conn.volumes.filter(Filters=[{'Name': 'attachment.instance-id', 'Values': [self.instance_id]}])
-        conn.create_tags(Resources=[v.id for v in volumes], Tags=tags)
+        pass
 
     def _tag_ec2(self, conn: Any, role: str) -> None:
         """ tag the current EC2 instance with a cluster role """
-        tags = [{'Key': 'Role', 'Value': role}]
-        conn.create_tags(Resources=[self.instance_id], Tags=tags)
+        pass
 
     def on_role_change(self, new_role: str) -> bool:
-        if not self.available:
-            return False
-        try:
-            conn = boto3.resource('ec2', region_name=self.region)  # type: ignore
-            self.retry(self._tag_ec2, conn, new_role)
-            self.retry(self._tag_ebs, conn, new_role)
-        except RetryFailedError:
-            logger.warning("Unable to communicate to AWS "
-                           "when setting tags for the EC2 instance {0} "
-                           "and attached EBS volumes".format(self.instance_id))
-            return False
-        return True
+        pass
 
 
 def main():

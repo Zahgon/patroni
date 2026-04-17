@@ -29,12 +29,7 @@ class OnReloadExecutor(CancellableSubprocess):
         """Run one `on_reload` callback at most.
 
         To achieve it we always kill already running command including child processes."""
-        self.cancel(kill=True)
-        self._kill_children()
-        with self._lock:
-            started = self._start_process(cmd, close_fds=True)
-        if started and self._process is not None:
-            thread_pool.get_executor().submit(self._process.wait)
+        pass
 
 
 class CallbackExecutor(CancellableExecutor, Thread):
@@ -55,28 +50,7 @@ class CallbackExecutor(CancellableExecutor, Thread):
         If it couldn't be killed we wait until it finishes.
 
         :param cmd: command to be executed"""
-        kwargs: Dict[str, Any] = {'stacklevel': 3} if sys.version_info >= (3, 8) else {}
-        logger.debug('CallbackExecutor.call(%s)', cmd, **kwargs)
-
-        if cmd[-3] == CallbackAction.ON_RELOAD:
-            return self._on_reload_executor.call_nowait(cmd)
-
-        self._kill_process()
-        with self._condition:
-            self._cmd = cmd
-            self._condition.notify()
+        pass
 
     def run(self) -> None:
-        while True:
-            with self._condition:
-                if self._cmd is None:
-                    self._condition.wait()
-                cmd, self._cmd = self._cmd, None
-
-            if cmd is not None:
-                with self._lock:
-                    if not self._start_process(cmd, close_fds=True):
-                        continue
-                if self._process:
-                    self._process.wait()
-                    self._kill_children()
+        pass

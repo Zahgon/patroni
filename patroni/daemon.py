@@ -22,7 +22,7 @@ try:  # pragma: no cover
     from systemd import daemon  # pyright: ignore
 
     def notify_systemd(msg: str) -> None:
-        daemon.notify(msg)  # pyright: ignore
+        pass
 
 except ImportError:  # pragma: no cover
     logger.info("Systemd integration is not supported")
@@ -36,15 +36,7 @@ def get_base_arg_parser() -> argparse.ArgumentParser:
 
     :returns: 'argparse.ArgumentParser' object
     """
-    from .config import Config
-    from .version import __version__
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--version', action='version', version='%(prog)s {0}'.format(__version__))
-    parser.add_argument('configfile', nargs='?', default='',
-                        help='Patroni may also read the configuration from the {0} environment variable'
-                        .format(Config.PATRONI_CONFIG_VARIABLE))
-    return parser
+    pass
 
 
 class AbstractPatroniDaemon(abc.ABC):
@@ -78,8 +70,7 @@ class AbstractPatroniDaemon(abc.ABC):
 
         Flag the daemon as "SIGHUP received".
         """
-        self._received_sighup = True
-        notify_systemd("RELOADING=1")
+        pass
 
     def api_sigterm(self) -> bool:
         """Guarantee only a single SIGTERM is being processed.
@@ -88,20 +79,14 @@ class AbstractPatroniDaemon(abc.ABC):
 
         :returns: ``True`` if the daemon was flagged as "SIGTERM received".
         """
-        ret = False
-        with self._sigterm_lock:
-            if not self._received_sigterm:
-                self._received_sigterm = True
-                ret = True
-        return ret
+        pass
 
     def sigterm_handler(self, *_: Any) -> None:
         """Handle SIGTERM signals.
 
         Terminate the daemon process through :func:`api_sigterm`.
         """
-        if self.api_sigterm():
-            sys.exit()
+        pass
 
     def setup_signal_handlers(self) -> None:
         """Set up daemon signal handlers.
@@ -112,18 +97,12 @@ class AbstractPatroniDaemon(abc.ABC):
 
             SIGHUP is only handled in non-Windows environments.
         """
-        self._received_sighup = False
-        self._sigterm_lock = Lock()
-        self._received_sigterm = False
-        if os.name != 'nt':
-            signal.signal(signal.SIGHUP, self.sighup_handler)
-        signal.signal(signal.SIGTERM, self.sigterm_handler)
+        pass
 
     @property
     def received_sigterm(self) -> bool:
         """If daemon was signaled with SIGTERM."""
-        with self._sigterm_lock:
-            return self._received_sigterm
+        pass
 
     def reload_config(self, sighup: bool = False, local: Optional[bool] = False) -> None:
         """Reload configuration.
@@ -132,8 +111,7 @@ class AbstractPatroniDaemon(abc.ABC):
                        The sighup parameter could be used in the method overridden in a child class.
         :param local: will be ``True`` if there are changes in the local configuration file.
         """
-        if local:
-            self.logger.reload_config(self.config.get('log', {}))
+        pass
 
     @abc.abstractmethod
     def _run_cycle(self) -> None:
@@ -148,15 +126,7 @@ class AbstractPatroniDaemon(abc.ABC):
         Start the logger thread and keep running execution cycles until a SIGTERM is eventually received. Also reload
         configuration upon receiving SIGHUP.
         """
-        notify_systemd("READY=1")
-        self.logger.start()
-        while not self.received_sigterm:
-            if self._received_sighup:
-                self._received_sighup = False
-                self.reload_config(True, self.config.reload_local_configuration())
-                notify_systemd("READY=1")
-
-            self._run_cycle()
+        pass
 
     @abc.abstractmethod
     def _shutdown(self) -> None:
@@ -167,10 +137,7 @@ class AbstractPatroniDaemon(abc.ABC):
 
         Shut down the daemon process and the logger thread.
         """
-        with self._sigterm_lock:
-            self._received_sigterm = True
-        self._shutdown()
-        self.logger.shutdown()
+        pass
 
 
 def abstract_main(cls: Type[AbstractPatroniDaemon], configfile: str) -> None:
@@ -179,33 +146,4 @@ def abstract_main(cls: Type[AbstractPatroniDaemon], configfile: str) -> None:
     :param cls: a class that should inherit from :class:`AbstractPatroniDaemon`.
     :param configfile:
     """
-    from .config import Config, ConfigParseError
-    from .utils import parse_int
-    try:
-        config = Config(configfile)
-    except ConfigParseError as e:
-        sys.exit(e.value)
-
-    thread_stack_size = None
-    if 'thread_stack_size' in config:
-        thread_stack_size = parse_int(config.get('thread_stack_size'), 'B')
-        if thread_stack_size is None:
-            logger.warning('Failed to parse thread_stack_size value "%s"', config.get('thread_stack_size'))
-
-    if thread_stack_size is None:
-        thread_stack_size = 524288
-        logger.info('Using default value thread_stack_size=%s', thread_stack_size)
-
-    thread_stack_size = max(65536, thread_stack_size)
-    try:
-        stack_size(thread_stack_size)
-    except Exception as e:
-        logger.warning('Failed to set threading.stack_size(%s): %r', thread_stack_size, e)
-
-    controller = cls(config)
-    try:
-        controller.run()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        controller.shutdown()
+    pass

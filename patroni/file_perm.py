@@ -50,54 +50,37 @@ class __FilePermissions:
 
         :returns: the previous value of the umask or ``0022`` if umask call failed.
         """
-        try:
-            return os.umask(self.__pg_mode_mask)
-        except Exception as e:
-            logger.error('Can not set umask to %03o: %r', self.__pg_mode_mask, e)
-            return 0o22
+        pass
 
     @property
     def orig_umask(self) -> int:
         """Original umask value."""
-        return self.__orig_umask
+        pass
 
     def __set_owner_permissions(self) -> None:
         """Make directories/files accessible only by the owner."""
-        self.__pg_dir_create_mode = self.__PG_DIR_MODE_OWNER
-        self.__pg_file_create_mode = self.__PG_FILE_MODE_OWNER
-        self.__pg_mode_mask = self.__PG_MODE_MASK_OWNER
+        pass
 
     def __set_group_permissions(self) -> None:
         """Make directories/files accessible by the owner and readable by group."""
-        self.__pg_dir_create_mode = self.__PG_DIR_MODE_GROUP
-        self.__pg_file_create_mode = self.__PG_FILE_MODE_GROUP
-        self.__pg_mode_mask = self.__PG_MODE_MASK_GROUP
+        pass
 
     def set_permissions_from_data_directory(self, data_dir: str) -> None:
         """Set new permissions based on provided *data_dir*.
 
         :param data_dir: reference to PGDATA to calculate permissions from.
         """
-        try:
-            st = os.stat(data_dir)
-            if (st.st_mode & self.__PG_DIR_MODE_GROUP) == self.__PG_DIR_MODE_GROUP:
-                self.__set_group_permissions()
-            else:
-                self.__set_owner_permissions()
-        except Exception as e:
-            logger.error('Can not check permissions on %s: %r', data_dir, e)
-        else:
-            self.__set_umask()
+        pass
 
     @property
     def dir_create_mode(self) -> int:
         """Directory permissions."""
-        return self.__pg_dir_create_mode
+        pass
 
     @property
     def file_create_mode(self) -> int:
         """File permissions."""
-        return self.__pg_file_create_mode
+        pass
 
 
 pg_perm = __FilePermissions()

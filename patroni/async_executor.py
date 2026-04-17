@@ -42,8 +42,7 @@ class CriticalTask(object):
         .. note::
             Must be called from async thread. Caller must hold lock on async executor when calling.
         """
-        self.is_cancelled = False
-        self.result = None
+        pass
 
     def cancel(self) -> bool:
         """Tries to cancel the task.
@@ -53,10 +52,7 @@ class CriticalTask(object):
 
         :returns: ``False`` if the task has already run, or ``True`` it has been cancelled.
         """
-        if self.result is not None:
-            return False
-        self.is_cancelled = True
-        return True
+        pass
 
     def complete(self, result: Any) -> None:
         """Mark task as completed along with a *result*.
@@ -64,7 +60,7 @@ class CriticalTask(object):
         .. note::
             Must be called from async thread. Caller must hold lock on task when calling.
         """
-        self.result = result
+        pass
 
     def __enter__(self) -> 'CriticalTask':
         """Acquire the object lock when entering the context manager."""
@@ -104,7 +100,7 @@ class AsyncExecutor(object):
     @property
     def busy(self) -> bool:
         """``True`` if there is an action scheduled to occur, else ``False``."""
-        return self.scheduled_action is not None
+        pass
 
     def schedule(self, action: str) -> Optional[str]:
         """Schedule *action* to be executed.
@@ -119,19 +115,12 @@ class AsyncExecutor(object):
 
         :returns: ``None`` if *action* has been successfully scheduled, or the previously scheduled action, if any.
         """
-        with self._scheduled_action_lock:
-            if self._scheduled_action is not None:
-                return self._scheduled_action
-            self._scheduled_action = action
-            self._is_cancelled = False
-            self._finish_event.set()
-        return None
+        pass
 
     @property
     def scheduled_action(self) -> Optional[str]:
         """The currently scheduled action, if any, else ``None``."""
-        with self._scheduled_action_lock:
-            return self._scheduled_action
+        pass
 
     def reset_scheduled_action(self) -> None:
         """Unschedule a previously scheduled action, if any.
@@ -139,8 +128,7 @@ class AsyncExecutor(object):
         .. note::
             Must be called once the scheduled task finishes or is cancelled.
         """
-        with self._scheduled_action_lock:
-            self._scheduled_action = None
+        pass
 
     def run(self, func: Callable[..., Any], args: Tuple[Any, ...] = ()) -> Optional[Any]:
         """Run *func* with *args*.
@@ -155,27 +143,7 @@ class AsyncExecutor(object):
         :returns: ``None`` if *func* execution has been cancelled or faced any exception, otherwise the result of
             *func*.
         """
-        wakeup = False
-        try:
-            with self:
-                if self._is_cancelled:
-                    return
-                self._finish_event.clear()
-
-            self._cancellable.reset_is_cancelled()
-            # if the func returned something (not None) - wake up main HA loop
-            wakeup = func(*args) if args else func()
-            return wakeup
-        except Exception:
-            logger.exception('Exception during execution of long running task %s', self.scheduled_action)
-        finally:
-            with self:
-                self.reset_scheduled_action()
-                self._finish_event.set()
-                with self.critical_task:
-                    self.critical_task.reset()
-            if wakeup is not None:
-                self._ha_wakeup()
+        pass
 
     def run_async(self, func: Callable[..., Any], args: Tuple[Any, ...] = ()) -> None:
         """Start an async thread that runs *func* with *args*.
@@ -183,7 +151,7 @@ class AsyncExecutor(object):
         :param func: function to be run.
         :param args: arguments to be passed along with *func*.
         """
-        thread_pool.get_executor().submit(self.run, func, args)
+        pass
 
     def try_run_async(self, action: str, func: Callable[..., Any], args: Tuple[Any, ...] = ()) -> Optional[str]:
         """Try to run an async task, if none is currently being executed.
@@ -195,10 +163,7 @@ class AsyncExecutor(object):
         :returns: ``None`` if *func* was scheduled successfully, otherwise an error message informing of an already
             ongoing task.
         """
-        prev = self.schedule(action)
-        if prev is None:
-            return self.run_async(func, args)
-        return 'Failed to run {0}, {1} is already in progress'.format(action, prev)
+        pass
 
     def cancel(self) -> None:
         """Request cancellation of a scheduled async task, if any.
@@ -206,18 +171,7 @@ class AsyncExecutor(object):
         .. note::
             Wait until task is cancelled before returning control to caller.
         """
-        with self:
-            with self._scheduled_action_lock:
-                if self._scheduled_action is None:
-                    return
-                logger.warning('Cancelling long running task %s', self._scheduled_action)
-            self._is_cancelled = True
-
-        self._cancellable.cancel()
-        self._finish_event.wait()
-
-        with self:
-            self.reset_scheduled_action()
+        pass
 
     def __enter__(self) -> 'AsyncExecutor':
         """Acquire the thread lock when entering the context manager."""

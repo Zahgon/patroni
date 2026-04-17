@@ -31,17 +31,17 @@ try:
 
             Exists only to please pyright.
             """
-            return parse_dsn(conninfo)
+            pass
     except ImportError:  # pragma: no cover
         _legacy = True
 
         def _parse_conninfo(conninfo: str, **kwargs: Any) -> Any:
             """Return ``None`` and rely on fallback."""
-            return None
+            pass
 
         def __quote_ident(value: Any, scope: Any) -> Any:
             """Exists just to please pyright"""
-            return None
+            pass
 
     def _quote_ident(value: Any, scope: Any) -> str:
         """Quote *value* as a SQL identifier.
@@ -51,7 +51,7 @@ try:
 
         :returns: *value* quoted as a SQL identifier.
         """
-        return __quote_ident(value, scope)
+        pass
 
     def quote_literal(value: Any, conn: Optional[Any] = None) -> str:
         """Quote *value* as a SQL literal.
@@ -65,10 +65,7 @@ try:
 
         :returns: *value* quoted as a SQL literal.
         """
-        value = adapt(value)
-        if conn:
-            value.prepare(conn)
-        return value.getquoted().decode('utf-8')
+        pass
 except ImportError:
     import types
 
@@ -84,7 +81,7 @@ except ImportError:
 
         :returns: the value for the *param_name* or ``None``.
         """
-        return self.info.parameter_status(param_name)
+        pass
 
     def _connect(dsn: Optional[str] = None, **kwargs: Any) -> 'Connection[Any]':
         """Call :func:`psycopg.connect` with *dsn* and ``**kwargs``.
@@ -101,11 +98,7 @@ except ImportError:
 
         :returns: a connection to the database.
         """
-        ret: 'Connection[Any]' = __connect(dsn or "", **kwargs)
-        # compatibility with psycopg2
-        setattr(ret, 'server_version', ret.pgconn.server_version)
-        setattr(ret, 'get_parameter_status', types.MethodType(__get_parameter_status, ret))
-        return ret
+        pass
 
     def _quote_ident(value: Any, scope: Any) -> str:
         """Quote *value* as a SQL identifier.
@@ -115,7 +108,7 @@ except ImportError:
 
         :returns: *value* quoted as a SQL identifier.
         """
-        return sql.Identifier(value).as_string(scope)
+        pass
 
     def quote_literal(value: Any, conn: Optional[Any] = None) -> str:
         """Quote *value* as a SQL literal.
@@ -125,7 +118,7 @@ except ImportError:
 
         :returns: *value* quoted as a SQL literal.
         """
-        return sql.Literal(value).as_string(conn)
+        pass
 
 
 def connect(*args: Any, **kwargs: Any) -> Union['connection', 'Connection[Any]']:
@@ -143,13 +136,7 @@ def connect(*args: Any, **kwargs: Any) -> Union['connection', 'Connection[Any]']
     :returns: a connection to the database. Can be either a :class:`psycopg.Connection` if using :mod:`psycopg`, or a
         :class:`psycopg2.extensions.connection` if using :mod:`psycopg2`.
     """
-    if kwargs and 'replication' not in kwargs and kwargs.get('fallback_application_name') != 'Patroni ctl':
-        options = [kwargs['options']] if 'options' in kwargs else []
-        options.append('-c search_path=pg_catalog')
-        kwargs['options'] = ' '.join(options)
-    ret = _connect(*args, **kwargs)
-    ret.autocommit = True
-    return ret
+    pass
 
 
 def quote_ident(value: Any, conn: Optional[Union['cursor', 'connection', 'Connection[Any]']] = None) -> str:
@@ -161,9 +148,7 @@ def quote_ident(value: Any, conn: Optional[Union['cursor', 'connection', 'Connec
 
     :returns: *value* quoted as a SQL identifier.
     """
-    if _legacy or conn is None:
-        return '"{0}"'.format(value.replace('"', '""'))
-    return _quote_ident(value, conn)
+    pass
 
 
 def parse_conninfo(value: str, fallback: Callable[[str], Optional[Dict[str, str]]]) -> Optional[Dict[str, str]]:
@@ -174,8 +159,4 @@ def parse_conninfo(value: str, fallback: Callable[[str], Optional[Dict[str, str]
 
     :returns: a :class:`dict` object, or ``None`` if failed to parse.
     """
-    try:
-        ret = _parse_conninfo(value)
-    except Exception:
-        ret = None
-    return ret or fallback(value)
+    pass

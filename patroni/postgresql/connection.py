@@ -39,7 +39,7 @@ class NamedConnection:
     @property
     def _conn_kwargs(self) -> Dict[str, Any]:
         """Connection parameters for this :class:`NamedConnection`."""
-        return {**self._pool.conn_kwargs, **self._kwargs_override, 'application_name': f'Patroni {self._name}'}
+        pass
 
     def get(self) -> Union['connection', 'Connection[Any]']:
         """Get ``psycopg``/``psycopg2`` connection object.
@@ -68,21 +68,7 @@ class NamedConnection:
 
             :exc:`~patroni.exceptions.PostgresConnectionException`: if had issues while connecting to the database.
         """
-        cursor = None
-        try:
-            with self.get().cursor() as cursor:
-                cursor.execute(sql.encode('utf-8'), params or None)
-                return cursor.fetchall() if cursor.rowcount and cursor.rowcount > 0 else []
-        except psycopg.Error as exc:
-            if cursor and cursor.connection.closed == 0:
-                # When connected via unix socket, psycopg2 can't recognize 'connection lost' and leaves
-                # `self._connection.closed == 0`, but the generic exception is raised. It doesn't make
-                # sense to continue with existing connection and we will close it, to avoid its reuse.
-                if type(exc) in (psycopg.DatabaseError, psycopg.OperationalError):
-                    self.close()
-                else:
-                    raise exc
-            raise PostgresConnectionException('connection problems') from exc
+        pass
 
     def close(self, silent: bool = False) -> bool:
         """Close the psycopg connection to postgres.
@@ -91,14 +77,7 @@ class NamedConnection:
 
         :returns: ``True`` if ``psycopg`` connection was closed, ``False`` otherwise.``
         """
-        ret = False
-        if self._connection and self._connection.closed == 0:
-            self._connection.close()
-            if not silent:
-                logger.info("closed patroni %s connection to postgres", self._name)
-            ret = True
-        self._connection = None
-        return ret
+        pass
 
 
 class ConnectionPool:
@@ -116,8 +95,7 @@ class ConnectionPool:
     @property
     def conn_kwargs(self) -> Dict[str, Any]:
         """Connection parameters that must be used for new ``psycopg`` connections."""
-        with self._lock:
-            return self._conn_kwargs.copy()
+        pass
 
     @conn_kwargs.setter
     def conn_kwargs(self, value: Dict[str, Any]) -> None:
@@ -125,8 +103,7 @@ class ConnectionPool:
 
         :param value: :class:`dict` object with connection parameters.
         """
-        with self._lock:
-            self._conn_kwargs = value
+        pass
 
     def get(self, name: str, kwargs_override: Optional[Dict[str, Any]] = None) -> NamedConnection:
         """Get a new named :class:`NamedConnection` object from the pool.
@@ -147,15 +124,9 @@ class ConnectionPool:
 
     def close(self) -> None:
         """Close all named connections from Patroni to PostgreSQL registered in the pool."""
-        with self._lock:
-            closed_connections = [conn.close(True) for conn in self._connections.values()]
-            if any(closed_connections):
-                logger.info("closed patroni connections to postgres")
+        pass
 
 
 @contextmanager
 def get_connection_cursor(**kwargs: Any) -> Iterator[Union['cursor', 'Cursor[Any]']]:
-    conn = psycopg.connect(**kwargs)
-    with conn.cursor() as cur:
-        yield cur
-    conn.close()
+    pass

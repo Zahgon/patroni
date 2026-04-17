@@ -32,11 +32,11 @@ class _Transformable(abc.ABC):
 
     @property
     def version_from(self) -> int:
-        return self.__version_from
+        pass
 
     @property
     def version_till(self) -> Optional[int]:
-        return self.__version_till
+        pass
 
     @abc.abstractmethod
     def transform(self, name: str, value: Any) -> Optional[Any]:
@@ -51,9 +51,7 @@ class _Transformable(abc.ABC):
 class Bool(_Transformable):
 
     def transform(self, name: str, value: Any) -> Optional[Any]:
-        if parse_bool(value) is not None:
-            return value
-        logger.warning('Removing bool parameter=%s from the config due to the invalid value=%s', name, value)
+        pass
 
 
 class Number(_Transformable):
@@ -67,15 +65,15 @@ class Number(_Transformable):
 
     @property
     def min_val(self) -> Union[int, float]:
-        return self.__min_val
+        pass
 
     @property
     def max_val(self) -> Union[int, float]:
-        return self.__max_val
+        pass
 
     @property
     def unit(self) -> Optional[str]:
-        return self.__unit
+        pass
 
     @staticmethod
     @abc.abstractmethod
@@ -83,33 +81,21 @@ class Number(_Transformable):
         """Convert provided value to unit."""
 
     def transform(self, name: str, value: Any) -> Union[int, float, None]:
-        num_value = self.parse(value, self.unit)
-        if num_value is not None:
-            if num_value < self.min_val:
-                logger.warning('Value=%s of parameter=%s is too low, increasing to %s%s',
-                               value, name, self.min_val, self.unit or '')
-                return self.min_val
-            if num_value > self.max_val:
-                logger.warning('Value=%s of parameter=%s is too big, decreasing to %s%s',
-                               value, name, self.max_val, self.unit or '')
-                return self.max_val
-            return value
-        logger.warning('Removing %s parameter=%s from the config due to the invalid value=%s',
-                       self.__class__.__name__.lower(), name, value)
+        pass
 
 
 class Integer(Number):
 
     @staticmethod
     def parse(value: Any, unit: Optional[str]) -> Optional[int]:
-        return parse_int(value, unit)
+        pass
 
 
 class Real(Number):
 
     @staticmethod
     def parse(value: Any, unit: Optional[str]) -> Optional[float]:
-        return parse_real(value, unit)
+        pass
 
 
 class Enum(_Transformable):
@@ -121,26 +107,22 @@ class Enum(_Transformable):
 
     @property
     def possible_values(self) -> Tuple[str, ...]:
-        return self.__possible_values
+        pass
 
     def transform(self, name: str, value: Optional[Any]) -> Optional[Any]:
-        if str(value).lower() in self.possible_values:
-            return value
-        logger.warning('Removing enum parameter=%s from the config due to the invalid value=%s', name, value)
+        pass
 
 
 class EnumBool(Enum):
 
     def transform(self, name: str, value: Optional[Any]) -> Optional[Any]:
-        if parse_bool(value) is not None:
-            return value
-        return super(EnumBool, self).transform(name, value)
+        pass
 
 
 class String(_Transformable):
 
     def transform(self, name: str, value: Optional[Any]) -> Optional[Any]:
-        return value
+        pass
 
 
 # Format:
@@ -243,15 +225,7 @@ def _get_postgres_guc_validators(config: Dict[str, Any], parameter: str) -> Tupl
 
     :rtype: yields any exception that is faced while parsing a validator spec into a Patroni validator object.
     """
-    validators: List[_Transformable] = []
-    for validator_spec in config.get(parameter, []):
-        try:
-            validator = ValidatorFactory(validator_spec)
-            validators.append(validator)
-        except (ValidatorFactoryNoType, ValidatorFactoryInvalidType, ValidatorFactoryInvalidSpec) as exc:
-            logger.warning('Faced an issue while parsing a validator for parameter `%s`: `%r`', parameter, exc)
-
-    return tuple(validators)
+    pass
 
 
 class InvalidGucValidatorsFile(PatroniException):
@@ -269,12 +243,7 @@ def _read_postgres_gucs_validators_file(file: PathLikeObj) -> Dict[str, Any]:
     :raises:
         :class:`InvalidGucValidatorsFile`: if faces an issue while reading or parsing *file*.
     """
-    try:
-        with file.open(encoding='UTF-8') as stream:
-            return yaml.safe_load(stream)
-    except Exception as exc:
-        raise InvalidGucValidatorsFile(
-            f'Unexpected issue while reading parameters file `{file}`: `{str(exc)}`.') from exc
+    pass
 
 
 def _load_postgres_gucs_validators() -> None:
@@ -432,15 +401,7 @@ def _transform_parameter_value(validators: MutableMapping[str, Tuple[_Transforma
           in *validators* for the corresponding Postgres *version*; or
         * ``None`` if *name* does not have a validator in *validators* and is not present in *available_gucs*.
     """
-    for validator in validators.get(name, ()) or ():
-        if version >= validator.version_from and\
-                (validator.version_till is None or version < validator.version_till):
-            return validator.transform(name, value)
-    # Ideally we should have a validator in *validators*. However, if none is available, we will not discard a
-    # setting that exists in Postgres *version*, but rather allow the value with no validation.
-    if name in available_gucs:
-        return value
-    logger.warning('Removing unexpected parameter=%s value=%s from the config', name, value)
+    pass
 
 
 def transform_postgresql_parameter_value(version: int, name: str, value: Any,
@@ -461,13 +422,7 @@ def transform_postgresql_parameter_value(version: int, name: str, value: Any,
         * *value* transformed to the expected format for GUC *name* in Postgres *version* using validators defined in
             ``parameters``. Can also return ``None``. See :func:`_transform_parameter_value`.
     """
-    if '.' in name and name not in parameters:
-        # likely an extension GUC, so just return as it is. Otherwise, if `name` is in `parameters`, it's likely a
-        # namespaced GUC from a custom Postgres build, so we treat that over the usual validation means.
-        return value
-    if name in recovery_parameters:
-        return None
-    return _transform_parameter_value(parameters, version, name, value, available_gucs)
+    pass
 
 
 def transform_recovery_parameter_value(version: int, name: str, value: Any,
@@ -484,11 +439,4 @@ def transform_recovery_parameter_value(version: int, name: str, value: Any,
     :returns: *value* transformed to the expected format for recovery GUC *name* in Postgres *version* using validators
         defined in ``recovery_parameters``. It can also return ``None``. See :func:`_transform_parameter_value`.
     """
-    # Recovery settings are not present in ``postgres --describe-config`` output of Postgres <= 11. In that case we
-    # just pass down the list of settings defined in Patroni validators so :func:`_transform_parameter_value` will not
-    # discard the recovery GUCs when running Postgres <= 11.
-    # NOTE: At the moment this change was done Postgres 11 was almost EOL, and had been likely extensively used with
-    # Patroni, so we should be able to rely solely on Patroni validators as the source of truth.
-    return _transform_parameter_value(
-        recovery_parameters, version, name, value,
-        available_gucs if version >= 120000 else CaseInsensitiveSet(recovery_parameters.keys()))
+    pass

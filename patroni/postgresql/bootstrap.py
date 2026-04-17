@@ -27,50 +27,17 @@ class Bootstrap(object):
 
     @property
     def running_custom_bootstrap(self) -> bool:
-        return self._running_custom_bootstrap
+        pass
 
     @property
     def keep_existing_recovery_conf(self) -> bool:
-        return self._running_custom_bootstrap and self._keep_existing_recovery_conf
+        pass
 
     def _initdb(self, config: Any) -> bool:
-        self._postgresql.set_state(PostgresqlState.INITDB)
-        not_allowed_options = ('pgdata', 'nosync', 'pwfile', 'sync-only', 'version')
-
-        def error_handler(e: str) -> None:
-            raise Exception(e)
-
-        options = process_user_options('initdb', config or [], not_allowed_options, error_handler)
-        pwfile = None
-
-        if self._postgresql.config.superuser:
-            if 'username' in self._postgresql.config.superuser:
-                options.append('--username={0}'.format(self._postgresql.config.superuser['username']))
-            if isinstance(self._postgresql.config.superuser.get('password'), str):
-                (fd, pwfile) = tempfile.mkstemp()
-                os.write(fd, self._postgresql.config.superuser['password'].encode('utf-8'))
-                os.close(fd)
-                options.append('--pwfile={0}'.format(pwfile))
-
-        ret = self._postgresql.initdb(*options)
-        if pwfile:
-            os.remove(pwfile)
-        if ret:
-            self._postgresql.configure_server_parameters()
-        else:
-            self._postgresql.set_state(PostgresqlState.INITDB_FAILED)
-        return ret
+        pass
 
     def _post_restore(self) -> None:
-        self._postgresql.config.restore_configuration_files()
-        self._postgresql.configure_server_parameters()
-
-        # make sure there is no trigger file or postgres will be automatically promoted
-        trigger_file = self._postgresql.config.triggerfile_good_name
-        trigger_file = (self._postgresql.config.get('recovery_conf') or EMPTY_DICT).get(trigger_file) or 'promote'
-        trigger_file = os.path.abspath(os.path.join(self._postgresql.data_dir, trigger_file))
-        if os.path.exists(trigger_file):
-            os.unlink(trigger_file)
+        pass
 
     def _custom_bootstrap(self, config: Any) -> bool:
         """Bootstrap a fresh Patroni cluster using a custom method provided by the user.
@@ -106,53 +73,13 @@ class Bootstrap(object):
         :returns: ``True`` if the bootstrap was successful, i.e. the execution of the custom ``command`` from *config*
             exited with code ``0``, ``False`` otherwise.
         """
-        self._postgresql.set_state(PostgresqlState.CUSTOM_BOOTSTRAP)
-        params = [] if config.get('no_params') else ['--scope=' + self._postgresql.scope,
-                                                     '--datadir=' + self._postgresql.data_dir]
-        # Add custom parameters specified by the user
-        reserved_args = {'command', 'no_params', 'keep_existing_recovery_conf', 'recovery_conf', 'scope', 'datadir'}
-        params += [f"--{arg}={val}" for arg, val in config.items() if arg not in reserved_args]
-
-        try:
-            logger.info('Running custom bootstrap script: %s', config['command'])
-            if self._postgresql.cancellable.call(shlex.split(config['command']) + params) != 0:
-                self._postgresql.set_state(PostgresqlState.CUSTOM_BOOTSTRAP_FAILED)
-                return False
-        except Exception:
-            logger.exception('Exception during custom bootstrap')
-            return False
-        self._post_restore()
-
-        if 'recovery_conf' in config:
-            self._postgresql.config.write_recovery_conf(config['recovery_conf'])
-        elif not self.keep_existing_recovery_conf:
-            self._postgresql.config.remove_recovery_conf()
-        return True
+        pass
 
     def call_post_bootstrap(self, config: Dict[str, Any]) -> bool:
         """
         runs a script after initdb or custom bootstrap script is called and waits until completion.
         """
-        cmd = config.get('post_bootstrap') or config.get('post_init')
-        if cmd:
-            r = self._postgresql.connection_pool.conn_kwargs
-
-            # https://www.postgresql.org/docs/current/static/libpq-pgpass.html
-            # A host name of localhost matches both TCP (host name localhost) and Unix domain socket
-            # (pghost empty or the default socket directory) connections coming from the local machine.
-            env = self._postgresql.config.write_pgpass({'host': 'localhost', **r})
-            env['PGOPTIONS'] = '-c synchronous_commit=local -c statement_timeout=0'
-            connstring = self._postgresql.config.format_dsn({**r, 'password': None})
-
-            try:
-                ret = self._postgresql.cancellable.call(shlex.split(cmd) + [connstring], env=env)
-            except OSError:
-                logger.error('post_init script %s failed', cmd)
-                return False
-            if ret != 0:
-                logger.error('post_init script %s returned non-zero code %d', cmd, ret)
-                return False
-        return True
+        pass
 
     def create_replica(self, clone_member: Union[Leader, Member, None],
                        clone_from_leader: bool = False) -> Optional[int]:
@@ -161,94 +88,7 @@ class Bootstrap(object):
             defined by the user.  this is a list, so we need to
             loop through all methods the user supplies
         """
-
-        self._postgresql.set_state(PostgresqlState.CREATING_REPLICA)
-        self._postgresql.schedule_sanity_checks_after_pause()
-
-        is_remote_member = isinstance(clone_member, RemoteMember)
-
-        # get list of replica methods either from clone member or from
-        # the config. If there is no configuration key, or no value is
-        # specified, use basebackup
-        replica_methods = (clone_member.create_replica_methods if is_remote_member
-                           else self._postgresql.create_replica_methods) or ['basebackup']
-
-        # If '--from-leader' parameter is set when reinit, always use basebackup
-        if clone_from_leader:
-            replica_methods = ['basebackup']
-
-        if clone_member and clone_member.conn_url:
-            r = clone_member.conn_kwargs(self._postgresql.config.replication)
-            # add the credentials to connect to the replica origin to pgpass.
-            env = self._postgresql.config.write_pgpass(r)
-            connstring = self._postgresql.config.format_dsn({**r, 'password': None})
-        else:
-            connstring = ''
-            env = os.environ.copy()
-            # if we don't have any source, leave only replica methods that work without it
-            replica_methods = [r for r in replica_methods
-                               if self._postgresql.replica_method_can_work_without_replication_connection(r)]
-
-        # go through them in priority order
-        ret = 1
-        for replica_method in replica_methods:
-            if self._postgresql.cancellable.is_cancelled:
-                break
-
-            method_config = self._postgresql.replica_method_options(replica_method)
-
-            # if the method is basebackup, then use the built-in
-            if replica_method == "basebackup":
-                ret = self.basebackup(connstring, env, method_config)
-                if ret == 0:
-                    logger.info("replica has been created using basebackup")
-                    # if basebackup succeeds, exit with success
-                    break
-            else:
-                if not self._postgresql.data_directory_empty():
-                    if method_config.get('keep_data', False):
-                        logger.info('Leaving data directory uncleaned')
-                    else:
-                        self._postgresql.remove_data_directory()
-
-                cmd = replica_method
-                # user-defined method; check for configuration
-                # not required, actually
-                if method_config:
-                    # look to see if the user has supplied a full command path
-                    # if not, use the method name as the command
-                    cmd = method_config.pop('command', cmd)
-
-                # add the default parameters
-                if not method_config.get('no_params', False):
-                    method_config.update({"scope": self._postgresql.scope,
-                                          "role": "replica",
-                                          "datadir": self._postgresql.data_dir,
-                                          "connstring": connstring})
-                else:
-                    for param in ('no_params', 'no_leader', 'keep_data'):
-                        method_config.pop(param, None)
-                params = ["--{0}={1}".format(arg, val) for arg, val in method_config.items()]
-                try:
-                    # call script with the full set of parameters
-                    ret = self._postgresql.cancellable.call(shlex.split(cmd) + params, env=env)
-                    # if we succeeded, stop
-                    if ret == 0:
-                        logger.info('replica has been created using %s', replica_method)
-                        break
-                    else:
-                        logger.error('Error creating replica using method %s: %s exited with code=%s',
-                                     replica_method, cmd, ret)
-                except Exception:
-                    logger.exception('Error creating replica using method %s', replica_method)
-                    ret = 1
-
-                # replica creation method failed, clean up data directory if configuration allows
-                if not method_config.get('keep_data', False) and not self._postgresql.data_directory_empty():
-                    self._postgresql.remove_data_directory()
-
-        self._postgresql.set_state(PostgresqlState.STOPPED)
-        return ret
+        pass
 
     def basebackup(self, conn_url: str, env: Dict[str, str], options: Dict[str, Any]) -> Optional[int]:
         # creates a replica data dir using pg_basebackup.
@@ -256,59 +96,7 @@ class Bootstrap(object):
         # tries twice, then returns failure (as 1)
         # uses "stream" as the xlog-method to avoid sync issues
         # supports additional user-supplied options, those are not validated
-        maxfailures = 2
-        ret = 1
-        not_allowed_options = ['pgdata', 'format', 'wal-method', 'xlog-method', 'gzip',
-                               'version', 'dbname', 'host', 'port', 'username', 'password']
-        pg_version = self._postgresql.config.pg_version
-        if pg_version < 150000:
-            not_allowed_options.append('compress')
-        user_options = process_user_options('basebackup', options, tuple(not_allowed_options), logger.error)
-        # Validate compress option on PG15+: only server-side compression is allowed
-        if pg_version >= 150000:
-            validated_options: List[str] = []
-            for opt in user_options:
-                if opt.startswith('--compress='):
-                    if opt.startswith('--compress=server'):
-                        validated_options.append(opt)
-                    else:
-                        logger.error('compress option for basebackup must use server-side compression '
-                                     '(e.g., server-gzip, server-zstd). Client-side compression is not allowed.')
-                else:
-                    validated_options.append(opt)
-            user_options = validated_options
-        cmd = [
-            self._postgresql.pgcommand("pg_basebackup"),
-            "--pgdata=" + self._postgresql.data_dir,
-            "-X",
-            "stream",
-            "--dbname=" + conn_url,
-        ] + user_options
-
-        for bbfailures in range(0, maxfailures):
-            if self._postgresql.cancellable.is_cancelled:
-                break
-            if not self._postgresql.data_directory_empty():
-                self._postgresql.remove_data_directory()
-            try:
-                logger.debug('calling: %r', cmd)
-                ret = self._postgresql.cancellable.call(cmd, env=env)
-                if ret == 0:
-                    break
-                else:
-                    logger.error('Error when fetching backup: pg_basebackup exited with code=%s', ret)
-
-            except Exception as e:
-                logger.error('Error when fetching backup with pg_basebackup: %s', e)
-
-            if bbfailures < maxfailures - 1:
-                logger.warning('Trying again in 5 seconds')
-                time.sleep(5)
-            elif not self._postgresql.data_directory_empty():
-                # pg_basebackup failed, clean up data directory
-                self._postgresql.remove_data_directory()
-
-        return ret
+        pass
 
     def clone(self, clone_member: Union[Leader, Member, None], clone_from_leader: bool = False) -> bool:
         """
@@ -317,115 +105,14 @@ class Bootstrap(object):
                works without the replication connection (i.e. restore from on-disk
                base backup)
         """
-
-        ret = self.create_replica(clone_member, clone_from_leader) == 0
-        if ret:
-            self._post_restore()
-        return ret
+        pass
 
     def bootstrap(self, config: Dict[str, Any]) -> bool:
         """ Initialize a new node from scratch and start it. """
-        pg_hba = config.get('pg_hba', [])
-        method = config.get('method') or 'initdb'
-        if method != 'initdb' and method in config and 'command' in config[method]:
-            self._keep_existing_recovery_conf = config[method].get('keep_existing_recovery_conf')
-            self._running_custom_bootstrap = True
-            do_initialize = self._custom_bootstrap
-        else:
-            method = 'initdb'
-            do_initialize = self._initdb
-        return do_initialize(config.get(method)) and self._postgresql.config.append_pg_hba(pg_hba) \
-            and self._postgresql.config.save_configuration_files() and bool(self._postgresql.start())
+        pass
 
     def create_or_update_role(self, name: str, password: Optional[str], options: List[str]) -> None:
-        options = list(map(str.upper, options))
-        if 'NOLOGIN' not in options and 'LOGIN' not in options:
-            options.append('LOGIN')
-
-        if password:
-            options.extend(['PASSWORD', quote_literal(password)])
-
-        sql = """DO $$
-BEGIN
-    SET local synchronous_commit = 'local';
-    PERFORM * FROM pg_catalog.pg_authid WHERE rolname = {0};
-    IF FOUND THEN
-        ALTER ROLE {1} WITH {2};
-    ELSE
-        CREATE ROLE {1} WITH {2};
-    END IF;
-END;$$""".format(quote_literal(name), quote_ident(name, self._postgresql.connection()), ' '.join(options))
-        self._postgresql.query('SET log_statement TO none')
-        self._postgresql.query('SET log_min_duration_statement TO -1')
-        self._postgresql.query("SET log_min_error_statement TO 'log'")
-        self._postgresql.query("SET pg_stat_statements.track_utility to 'off'")
-        self._postgresql.query("SET pgaudit.log TO none")
-        try:
-            self._postgresql.query(sql)
-        finally:
-            self._postgresql.query('RESET log_min_error_statement')
-            self._postgresql.query('RESET log_min_duration_statement')
-            self._postgresql.query('RESET log_statement')
-            self._postgresql.query('RESET pg_stat_statements.track_utility')
-            self._postgresql.query('RESET pgaudit.log')
+        pass
 
     def post_bootstrap(self, config: Dict[str, Any], task: CriticalTask) -> Optional[bool]:
-        try:
-            postgresql = self._postgresql
-            superuser = postgresql.config.superuser
-            if 'username' in superuser and 'password' in superuser:
-                self.create_or_update_role(superuser['username'], superuser['password'], ['SUPERUSER'])
-
-            task.complete(self.call_post_bootstrap(config))
-            if task.result:
-                replication = postgresql.config.replication
-                self.create_or_update_role(replication['username'], replication.get('password'), ['REPLICATION'])
-
-                rewind = postgresql.config.rewind_credentials
-                if not deep_compare(rewind, superuser):
-                    self.create_or_update_role(rewind['username'], rewind.get('password'), [])
-                    for f in ('pg_ls_dir(text, boolean, boolean)', 'pg_stat_file(text, boolean)',
-                              'pg_read_binary_file(text)', 'pg_read_binary_file(text, bigint, bigint, boolean)'):
-                        sql = """DO $$
-BEGIN
-    SET local synchronous_commit = 'local';
-    GRANT EXECUTE ON function pg_catalog.{0} TO {1};
-END;$$""".format(f, quote_ident(rewind['username'], postgresql.connection()))
-                        postgresql.query(sql)
-
-                if config.get('users'):
-                    logger.error('User creation is not be supported starting from v4.0.0. '
-                                 'Please use "bootstrap.post_bootstrap" script to create users.')
-
-                # We were doing a custom bootstrap instead of running initdb, therefore we opened trust
-                # access from certain addresses to be able to reach cluster and change password
-                if self._running_custom_bootstrap:
-                    self._running_custom_bootstrap = False
-                    # If we don't have custom configuration for pg_hba.conf we need to restore original file
-                    if not postgresql.config.get('pg_hba'):
-                        if os.path.exists(postgresql.config.pg_hba_conf):
-                            os.unlink(postgresql.config.pg_hba_conf)
-                        postgresql.config.restore_configuration_files()
-                    postgresql.config.write_postgresql_conf()
-                    postgresql.config.replace_pg_ident()
-
-                    # at this point there should be no recovery.conf
-                    postgresql.config.remove_recovery_conf()
-
-                    if postgresql.config.hba_file:
-                        postgresql.restart()
-                    else:
-                        postgresql.config.replace_pg_hba()
-                        if postgresql.pending_restart_reason:
-                            postgresql.restart()
-                        else:
-                            postgresql.reload()
-                            time.sleep(1)  # give a time to postgres to "reload" configuration files
-                            postgresql.connection().close()  # close connection to reconnect with a new password
-                else:  # initdb
-                    # We may want create database and extension for some MPP clusters
-                    self._postgresql.mpp_handler.bootstrap()
-        except Exception:
-            logger.exception('post_bootstrap')
-            task.complete(False)
-        return task.result
+        pass

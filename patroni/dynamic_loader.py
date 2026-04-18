@@ -27,7 +27,21 @@ def iter_modules(package: str) -> List[str]:
 
     :returns: list of known module names with absolute python module path namespace, e.g. ``patroni.dcs.etcd``.
     """
-    pass
+    module_prefix = package + '.'
+
+    if getattr(sys, 'frozen', False):
+        toc: Set[str] = set()
+        for importer in pkgutil.iter_importers():
+            if hasattr(importer, 'toc'):
+                toc |= getattr(importer, 'toc')
+        if len(toc) > 0:
+            dots = module_prefix.count('.')
+            return [module for module in toc if module.startswith(module_prefix) and module.count('.') == dots]
+
+    pkg_file = sys.modules[package].__file__
+    if TYPE_CHECKING:  # pragma: no cover
+        assert isinstance(pkg_file, str)
+    return [name for _, name, is_pkg in pkgutil.iter_modules([os.path.dirname(pkg_file)], module_prefix) if not is_pkg]
 
 
 ClassType = TypeVar("ClassType")

@@ -243,7 +243,12 @@ def _read_postgres_gucs_validators_file(file: PathLikeObj) -> Dict[str, Any]:
     :raises:
         :class:`InvalidGucValidatorsFile`: if faces an issue while reading or parsing *file*.
     """
-    pass
+    try:
+        with file.open(encoding='UTF-8') as stream:
+            return yaml.safe_load(stream)
+    except Exception as exc:
+        raise InvalidGucValidatorsFile(
+            f'Unexpected issue while reading parameters file `{file}`: `{str(exc)}`.') from exc
 
 
 def _load_postgres_gucs_validators() -> None:
